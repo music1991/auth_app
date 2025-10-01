@@ -4,54 +4,50 @@ import { jwtVerify } from "jose";
 
 const PUBLIC_AUTH_PATHS = ["/login", "/register", "/verify"];
 
+const SECRET = process.env.JWT_SECRET
+  ? new TextEncoder().encode(process.env.JWT_SECRET)
+  : null;
+
 function isAuthPath(pathname: string) {
-  return (
-    PUBLIC_AUTH_PATHS.includes(pathname) ||
-    pathname.startsWith("/auth/")
-  );
+  return PUBLIC_AUTH_PATHS.includes(pathname) || pathname.startsWith("/auth/");
 }
 
 function isUsers(pathname: string) {
   return pathname.startsWith("/users");
 }
 
-async function isValid(token?: string) {
-  if (!token) return false;
+async function verifyToken(token?: string): Promise<{ valid: boolean; role: "admin" | "user" }> {
+  if (!token || !SECRET) return { valid: false, role: "user" };
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
-    await jwtVerify(token, secret);
-    return true;
+    const { payload } = await jwtVerify(token, SECRET);
+    const role = payload.role === "admin" ? "admin" : "user";
+    return { valid: true, role };
   } catch {
-    return false;
+    return { valid: false, role: "user" };
   }
 }
 
 export async function middleware(req: NextRequest) {
   const session = req.cookies.get("session")?.value;
-  const role = req.cookies.get("role")?.value;
   const { pathname } = req.nextUrl;
 
-  const logged = await isValid(session);
+  const { valid: logged, role } = await verifyToken(session);
 
-  // Cookie inválida → purga y trata como no logueado
-  if (!logged && (session || role)) {
+  if (!logged && session) {
     const res = NextResponse.redirect(new URL("/login", req.url));
     res.cookies.delete("session");
     res.cookies.delete("role");
     return res;
   }
 
-  // No logueado → bloquea home y /users
   if (!logged && (pathname === "/" || isUsers(pathname))) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Logueado pero NO admin → bloquea /users
   if (logged && isUsers(pathname) && role !== "admin") {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
-  // Logueado → fuera de login/register/verify
   if (logged && isAuthPath(pathname)) {
     return NextResponse.redirect(new URL("/", req.url));
   }
