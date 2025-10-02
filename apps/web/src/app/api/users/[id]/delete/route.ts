@@ -3,6 +3,9 @@ import fs from "fs/promises";
 import path from "path";
 import { getSession } from "@/lib/auth";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const dataRoot = path.resolve(process.cwd(), "..", "..", "data");
 const usersPath = path.join(dataRoot, "users.json");
 const verificationsPath = path.join(dataRoot, "verifications.json");

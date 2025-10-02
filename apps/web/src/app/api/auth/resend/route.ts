@@ -4,11 +4,12 @@ import path from "path";
 import { randomUUID } from "crypto";
 import { CODE_TIME, sendVerificationEmail } from "@/lib/email";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const dataRoot = path.resolve(process.cwd(), "..", "..", "data");
 const verificationsPath = path.join(dataRoot, "verifications.json");
 const usersPath = path.join(dataRoot, "users.json");
-
-export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
