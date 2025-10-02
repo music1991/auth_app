@@ -6,6 +6,11 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    outputFileTracingIncludes: {
+      "/api/**": ["data/**"],
+    },
+  },
 };
 
 module.exports = nextConfig;
