@@ -1,7 +1,5 @@
 {
   "functions": {
-    "**": {
-      "includeFiles": "../data/**"
-    }
+    "app/**": { "includeFiles": "data/**" }
   }
 }

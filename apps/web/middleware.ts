@@ -39,5 +39,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/users/:path*", "/login", "/register", "/verify", "/auth/:path*"],
+  matcher: ["/((?!_next|.*\\..*|api).*)"],
 };

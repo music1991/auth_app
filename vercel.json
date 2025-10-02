@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "apps/web/**": {
-      "includeFiles": "data/**"
-    }
-  }
-}
