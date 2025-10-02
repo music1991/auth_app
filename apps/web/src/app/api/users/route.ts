@@ -1,27 +1,17 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import { getSession } from "@/lib/auth";
+import { readJson } from "@/lib/jsonStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const dataRoot = path.resolve(process.cwd(), "..", "..", "data");
-const usersPath = path.join(dataRoot, "users.json");
-
 export async function GET() {
   try {
     const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    if (session.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const raw = await fs.readFile(usersPath, "utf-8").catch(() => "[]");
-    const users = JSON.parse(raw) as any[];
+    const users: any[] = (await readJson("users.json")) ?? [];
 
     const safe = users.map((u: any) => ({
       id: u.id,
@@ -36,6 +26,7 @@ export async function GET() {
     res.headers.set("Cache-Control", "no-store");
     return res;
   } catch (err) {
+    console.error("GET /api/users failed:", err);
     return NextResponse.json({ error: "Error getting users" }, { status: 500 });
   }
 }
