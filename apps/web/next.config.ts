@@ -8,7 +8,7 @@ const nextConfig = {
   },
   experimental: {
     outputFileTracingIncludes: {
-      "/api/**": ["data/**"],
+      "/app/api/**/route": ["../../data/**"],
     },
   },
 };

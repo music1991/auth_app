@@ -7,8 +7,7 @@ import { setSession } from "@/lib/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const dataRoot = path.resolve(process.cwd(), "..", "..", "data");
-const usersPath = path.join(dataRoot, "users.json");
+const usersPath = path.join(process.cwd(), "..", "data", "users.json");
 
 export async function POST(req: Request) {
   try {
