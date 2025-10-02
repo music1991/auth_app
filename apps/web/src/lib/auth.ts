@@ -1,4 +1,5 @@
 import "server-only";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 
@@ -24,20 +25,29 @@ export async function verifySessionToken(token: string) {
   return { sub: String(payload.sub), role } as Session;
 }
 
-const isProd = process.env.NODE_ENV === "production";
 const COOKIE_OPTS = {
   httpOnly: true,
   sameSite: "lax" as const,
   path: "/",
-  secure: isProd,
+  secure: process.env.NODE_ENV === "production",
   maxAge: 60 * 60 * 3,
 };
 
-export async function setSession(userId: string, role: Role) {
+export async function setSession<T>(
+  res: NextResponse<T>,
+  userId: string,
+  role: Role
+): Promise<NextResponse<T>> {
   const token = await signSessionToken(userId, role);
-  const jar = await cookies();
-  jar.set("session", token, COOKIE_OPTS);
-  jar.set("role", role, COOKIE_OPTS);
+  res.cookies.set("session", token, COOKIE_OPTS);
+  res.cookies.set("role", role, COOKIE_OPTS);
+  return res;
+}
+
+export function clearSession(res: NextResponse) {
+  res.cookies.delete("session");
+  res.cookies.delete("role");
+  return res;
 }
 
 export async function getSession(): Promise<Session | null> {
@@ -50,9 +60,3 @@ export async function getSession(): Promise<Session | null> {
     return null;
   }
 }
-
-// export async function clearSession() {
-//   const jar = await cookies();
-//   jar.delete("session");
-//   jar.delete("role");
-// }

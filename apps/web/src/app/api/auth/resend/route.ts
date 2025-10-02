@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import { randomUUID } from "crypto";
 import { CODE_TIME, sendVerificationEmail } from "@/lib/email";
+import { readJson, writeJson } from "@/lib/jsonStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const dataRoot = path.resolve(process.cwd(), "..", "..", "data");
-const verificationsPath = path.join(dataRoot, "verifications.json");
-const usersPath = path.join(dataRoot, "users.json");
 
 export async function POST(req: Request) {
   try {
@@ -23,8 +18,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    const rawUsers = await fs.readFile(usersPath, "utf-8").catch(() => "[]");
-    const users = JSON.parse(rawUsers) as any[];
+    const users: any[] = (await readJson("users.json")) ?? [];
     const user = users.find((u) => String(u.email || "").toLowerCase() === email);
 
     if (!user) {
@@ -34,8 +28,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User already verified" }, { status: 400 });
     }
 
-    const rawVerif = await fs.readFile(verificationsPath, "utf-8").catch(() => "[]");
-    const verifs = JSON.parse(rawVerif) as any[];
+    const verifs: any[] = (await readJson("verifications.json")) ?? [];
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + CODE_TIME * 60 * 1000).toISOString();
@@ -51,15 +44,7 @@ export async function POST(req: Request) {
       expiresAt,
     });
 
-    try {
-      await fs.writeFile(verificationsPath, JSON.stringify(remaining, null, 2));
-    } catch (err) {
-      console.error("Failed to write verifications.json:", err);
-      return NextResponse.json(
-        { error: "Could not save verification" },
-        { status: 500 }
-      );
-    }
+    await writeJson("verifications.json", remaining);
 
     try {
       await sendVerificationEmail(email, code);
@@ -77,7 +62,7 @@ export async function POST(req: Request) {
       ...(process.env.NODE_ENV !== "production" ? { devCode: code } : {}),
     });
   } catch (err) {
-    console.error("POST /verifications failed:", err);
+    console.error("POST /resend failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
