@@ -31,7 +31,6 @@ export default function Countdown({
 
   useEffect(() => {
     if (done && onDone) onDone();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
 
   return (
