@@ -1,32 +1,38 @@
+// apps/web/src/app/api/auth/verifications/route.ts
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import { randomUUID } from "crypto";
 import { CODE_TIME, sendVerificationEmail } from "@/lib/email";
+import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const dataRoot = path.resolve(process.cwd(), "..", "..", "data");
-const verificationsPath = path.join(dataRoot, "verifications.json");
-const usersPath = path.join(dataRoot, "users.json");
+function clean(v: unknown, max = 256) {
+  return String(v ?? "").trim().slice(0, max);
+}
 
 export async function POST(req: Request) {
   try {
+    // Aseguramos JSON
+    if (!req.headers.get("content-type")?.includes("application/json")) {
+      return NextResponse.json(
+        { error: "Content-Type must be application/json" },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json().catch(() => null);
     if (!body) {
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
-    const email = String(body.email || "").trim().toLowerCase();
+    const email = clean(body.email, 254).toLowerCase();
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    const rawUsers = await fs.readFile(usersPath, "utf-8").catch(() => "[]");
-    const users = JSON.parse(rawUsers) as any[];
-    const user = users.find((u) => String(u.email || "").toLowerCase() === email);
-
+    // Traer usuario por email
+    const user = await db.getUserByEmail(email);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -34,50 +40,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User already verified" }, { status: 400 });
     }
 
-    const rawVerif = await fs.readFile(verificationsPath, "utf-8").catch(() => "[]");
-    const verifs = JSON.parse(rawVerif) as any[];
-
+    // Generar y upsert verificación por user_id
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + CODE_TIME * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + CODE_TIME * 60 * 1000);
 
-    const remaining = verifs.filter(
-      (v) => String(v.email || "").toLowerCase() !== email
-    );
-    remaining.push({
+    await db.upsertVerificationForUser({
       id: randomUUID(),
-      email,
+      user_id: user.id, // << clave: usamos user_id
       code,
-      consumed: false,
       expiresAt,
     });
 
-    try {
-      await fs.writeFile(verificationsPath, JSON.stringify(remaining, null, 2));
-    } catch (err) {
-      console.error("Failed to write verifications.json:", err);
-      return NextResponse.json(
-        { error: "Could not save verification" },
-        { status: 500 }
-      );
-    }
-
+    // Enviar email
     try {
       await sendVerificationEmail(email, code);
     } catch (err) {
-      console.error("Failed to send verification email:", err);
+      console.error("[verifications] sendVerificationEmail failed:", err);
       return NextResponse.json(
         { error: "Could not send verification email" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       ok: true,
-      expiresAt,
+      user_id: user.id,
+      expiresAt: expiresAt.toISOString(),
       ...(process.env.NODE_ENV !== "production" ? { devCode: code } : {}),
     });
+    res.headers.set("Cache-Control", "no-store");
+    return res;
   } catch (err) {
     console.error("POST /verifications failed:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    const payload =
+      process.env.NODE_ENV !== "production"
+        ? { error: "Internal Server Error", detail: String(err) }
+        : { error: "Internal Server Error" };
+    const res = NextResponse.json(payload, { status: 500 });
+    res.headers.set("Cache-Control", "no-store");
+    return res;
   }
 }

@@ -1,45 +1,71 @@
+// apps/web/src/app/api/admin/users/[id]/verify/route.ts
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import { getSession } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const dataRoot = path.resolve(process.cwd(), "..", "..", "data");
-const usersPath = path.join(dataRoot, "users.json");
-
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (session.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-  const raw = await fs.readFile(usersPath, "utf-8").catch(() => "[]");
-  const users = JSON.parse(raw) as any[];
-  const idx = users.findIndex((u: any) => u.id === params.id);
-  if (idx === -1) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const user = await db.getUserById(params.id);
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
-  if (users[idx].verified) {
-    const u = users[idx];
-    return NextResponse.json({
+    if (user.verified) {
+      const res = NextResponse.json({
+        ok: true,
+        alreadyVerified: true,
+        user: {
+          id: user.id,
+          name: user.name ?? null,
+          email: user.email,
+          role: user.role ?? "user",
+          verified: !!user.verified,
+          createdAt: user.created_at,
+        },
+      });
+      res.headers.set("Cache-Control", "no-store");
+      return res;
+    }
+
+    // Marcar verificado y limpiar verifications pendientes (opcional)
+    await db.markVerifiedById(user.id);
+    await db.consumeAllForUserId(user.id);
+
+    const updated = await db.getUserById(user.id); // refrescamos datos
+
+    const res = NextResponse.json({
       ok: true,
-      alreadyVerified: true,
       user: {
-        id: u.id, name: u.name ?? null, email: u.email,
-        role: u.role ?? "user", verified: !!u.verified, createdAt: u.createdAt,
+        id: updated?.id ?? user.id,
+        name: (updated?.name ?? user.name) ?? null,
+        email: updated?.email ?? user.email,
+        role: (updated?.role ?? user.role) ?? "user",
+        verified: !!(updated?.verified ?? true),
+        createdAt: updated?.created_at ?? user.created_at,
       },
     });
+    res.headers.set("Cache-Control", "no-store");
+    return res;
+  } catch (err) {
+    console.error("POST /admin/users/[id]/verify failed:", err);
+    const res = NextResponse.json(
+      process.env.NODE_ENV !== "production"
+        ? { error: "Internal Server Error", detail: String(err) }
+        : { error: "Internal Server Error" },
+      { status: 500 }
+    );
+    res.headers.set("Cache-Control", "no-store");
+    return res;
   }
-
-  users[idx].verified = true;
-  await fs.writeFile(usersPath, JSON.stringify(users, null, 2));
-
-  const u = users[idx];
-  return NextResponse.json({
-    ok: true,
-    user: {
-      id: u.id, name: u.name ?? null, email: u.email,
-      role: u.role ?? "user", verified: !!u.verified, createdAt: u.createdAt,
-    },
-  });
 }

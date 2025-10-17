@@ -1,5 +1,7 @@
+// apps/web/src/lib/auth.ts
 import "server-only";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import { SignJWT, jwtVerify } from "jose";
 
 export type Role = "admin" | "user";
@@ -30,18 +32,23 @@ const COOKIE_OPTS = {
   sameSite: "lax" as const,
   path: "/",
   secure: isProd,
-  maxAge: 60 * 60 * 3,
+  maxAge: 60 * 60 * 3, // 3h (independent of JWT; adjust if you want them aligned)
 };
 
+/** Sets cookies and RETURNS a NextResponse you can return from the route */
 export async function setSession(userId: string, role: Role) {
   const token = await signSessionToken(userId, role);
-  const jar = await cookies();
-  jar.set("session", token, COOKIE_OPTS);
-  jar.set("role", role, COOKIE_OPTS);
+
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set("session", token, COOKIE_OPTS);
+  res.cookies.set("role", role, COOKIE_OPTS);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
 }
 
+/** Reads the session from request cookies */
 export async function getSession(): Promise<Session | null> {
-  const jar = await cookies();
+  const jar = await cookies(); // no await needed
   const token = jar.get("session")?.value;
   if (!token) return null;
   try {
@@ -51,8 +58,11 @@ export async function getSession(): Promise<Session | null> {
   }
 }
 
-// export async function clearSession() {
-//   const jar = await cookies();
-//   jar.delete("session");
-//   jar.delete("role");
-// }
+/** Clears cookies and RETURNS a NextResponse */
+export function clearSession() {
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set("session", "", { ...COOKIE_OPTS, maxAge: 0 });
+  res.cookies.set("role", "", { ...COOKIE_OPTS, maxAge: 0 });
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
