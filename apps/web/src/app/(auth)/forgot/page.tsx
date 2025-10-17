@@ -33,6 +33,7 @@ export default function ForgotPasswordPage() {
     toast.success("We've sent a reset link.");
     setLoading(false);
     router.replace("/");
+    router.refresh();
   };
 
   return (
