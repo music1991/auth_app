@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import Countdown from "@/components/CountDown";
 import PasswordField from "@/components/PasswordField";
 import RequirementsList from "@/components/RequirementsList";
+import Count from "@/components/Count";
 
 
 export default function RegisterPage() {
@@ -232,7 +232,7 @@ function VerificationNotice({
       The code expires in{" "}
       {expiresAt ? (
         <>
-          <Countdown expiresAt={expiresAt} onDone={onExpired} />{" "}minutes.
+          <Count expiresAt={expiresAt} onDone={onExpired} />{" "}minutes.
         </>
       ) : (
         "—"
