@@ -27,9 +27,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json().catch(() => null);
-    if (!body) {
-      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-    }
+    if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
     const name = clean(body.name, 128) || null;
     const last_name = clean(body.lastName, 128) || null;

@@ -1,6 +1,6 @@
 import "server-only";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 
 export type Role = "admin" | "user";
@@ -25,12 +25,11 @@ export async function verifySessionToken(token: string) {
   return { sub: String(payload.sub), role } as Session;
 }
 
-const isProd = process.env.NODE_ENV === "production";
 const COOKIE_OPTS = {
   httpOnly: true,
   sameSite: "lax" as const,
   path: "/",
-  secure: isProd,
+  secure: process.env.NODE_ENV === "production",
   maxAge: 60 * 60 * 3,
 };
 

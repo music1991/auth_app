@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { CODE_TIME, sendVerificationEmail } from "@/lib/email";
 import { db } from "@/lib/db";
+import { CODE_TIME, sendVerificationEmail } from "@/lib/email/verification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
