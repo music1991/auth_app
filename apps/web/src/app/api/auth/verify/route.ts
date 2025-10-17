@@ -1,4 +1,3 @@
-// apps/web/src/app/api/auth/verify/route.ts
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -27,7 +26,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid params" }, { status: 400 });
     }
 
-    // 1) Buscar usuario por email para obtener su id
     const user = await db.getUserByEmail(email);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -36,18 +34,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User already verified" }, { status: 400 });
     }
 
-    // 2) Traer verificación válida por user_id
     const verif = await db.getLatestValidVerificationByUserId(user.id, new Date());
     if (!verif) {
       return NextResponse.json({ error: "No valid verification" }, { status: 400 });
     }
 
-    // 3) Comparar código
     if (verif.code !== code) {
       return NextResponse.json({ error: "Invalid code" }, { status: 400 });
     }
 
-    // 4) Consumir verifs y marcar user como verificado
     await db.consumeAllForUserId(user.id);
     await db.markVerifiedById(user.id);
 

@@ -1,4 +1,3 @@
-// apps/web/src/app/api/auth/register/route.ts
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
@@ -57,7 +56,6 @@ export async function POST(req: Request) {
       role,
     });
 
-    // crear verificación (por user_id)
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + CODE_TIME * 60 * 1000);
 

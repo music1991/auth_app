@@ -1,4 +1,3 @@
-// apps/web/src/app/api/admin/users/[id]/verify/route.ts
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -38,11 +37,10 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       return res;
     }
 
-    // Marcar verificado y limpiar verifications pendientes (opcional)
     await db.markVerifiedById(user.id);
     await db.consumeAllForUserId(user.id);
 
-    const updated = await db.getUserById(user.id); // refrescamos datos
+    const updated = await db.getUserById(user.id);
 
     const res = NextResponse.json({
       ok: true,

@@ -1,4 +1,3 @@
-// apps/web/src/app/api/auth/verifications/route.ts
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { CODE_TIME, sendVerificationEmail } from "@/lib/email";
@@ -13,7 +12,6 @@ function clean(v: unknown, max = 256) {
 
 export async function POST(req: Request) {
   try {
-    // Aseguramos JSON
     if (!req.headers.get("content-type")?.includes("application/json")) {
       return NextResponse.json(
         { error: "Content-Type must be application/json" },
@@ -31,7 +29,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Traer usuario por email
     const user = await db.getUserByEmail(email);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -40,18 +37,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User already verified" }, { status: 400 });
     }
 
-    // Generar y upsert verificación por user_id
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + CODE_TIME * 60 * 1000);
 
     await db.upsertVerificationForUser({
       id: randomUUID(),
-      user_id: user.id, // << clave: usamos user_id
+      user_id: user.id,
       code,
       expiresAt,
     });
 
-    // Enviar email
     try {
       await sendVerificationEmail(email, code);
     } catch (err) {

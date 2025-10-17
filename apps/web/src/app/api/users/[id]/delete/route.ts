@@ -1,4 +1,3 @@
-// apps/web/src/app/api/admin/users/[id]/route.ts
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -24,7 +23,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // 1) limpiar verifications del user (por user_id)
     try {
       await db.deleteVerificationsByUserId(user.id);
     } catch (e) {
@@ -35,7 +33,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
       );
     }
 
-    // 2) borrar el user
     try {
       await db.deleteUserById(user.id);
     } catch (e) {

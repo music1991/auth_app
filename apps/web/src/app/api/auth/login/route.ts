@@ -1,4 +1,3 @@
-// apps/web/src/app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
@@ -13,7 +12,6 @@ function clean(v: unknown, max = 256) {
 
 export async function POST(req: Request) {
   try {
-    // Ensure JSON body
     if (!req.headers.get("content-type")?.includes("application/json")) {
       return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 400 });
     }
@@ -36,7 +34,6 @@ export async function POST(req: Request) {
     });
 
     if (!user || !user.password_hash) {
-      // Don’t leak which field failed in production; you can split if you prefer
       return NextResponse.json({ error: "Invalid email or password", user }, { status: 401 });
     }
 
@@ -51,10 +48,8 @@ export async function POST(req: Request) {
 
     const role = (user.role === "admin" ? "admin" : "user") as "admin" | "user";
 
-    // setSession should return a NextResponse with cookies set.
     const res = await setSession(user.id, role);
 
-    // Ensure no caching of auth responses
     res.headers.set("Cache-Control", "no-store");
     return res;
   } catch (err) {

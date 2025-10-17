@@ -1,10 +1,8 @@
-// apps/web/src/lib/db.ts
 import "server-only";
 import { neon, neonConfig } from "@neondatabase/serverless";
 
 neonConfig.fetchConnectionCache = true;
 
-/* ---------- Types ---------- */
 export type DbUser = {
   id: string;
   name: string | null;
@@ -12,18 +10,17 @@ export type DbUser = {
   password_hash: string;
   role: "user" | "admin";
   verified: boolean;
-  created_at: string; // keep as string; parse to Date in app if needed
+  created_at: string;
 };
 
 export type DbVerification = {
   id: string;
-  user_id: string; // usamos user_id (no email)
+  user_id: string;
   code: string;
   consumed: boolean;
   expires_at: string;
 };
 
-/* ---------- Lazy Neon tag with preserved generics ---------- */
 interface SqlTag {
   <T = any>(strings: TemplateStringsArray, ...values: any[]): Promise<T[]>;
 }
@@ -38,13 +35,11 @@ function getSql(): SqlTag {
   return _sql;
 }
 
-// Expose a tag that keeps generics and lazy-inits
 export const sql: SqlTag = (<T = any>(
   strings: TemplateStringsArray,
   ...values: any[]
 ) => (getSql() as any)(strings, ...values)) as SqlTag;
 
-/* ---------- helpers ---------- */
 function normEmail(e: string) {
   return String(e || "").trim().toLowerCase();
 }
@@ -52,9 +47,7 @@ function assertNonEmpty(value: string, field: string) {
   if (!value || !value.trim()) throw new Error(`${field} is required`);
 }
 
-/* ---------- API de acceso (solo lecturas/escrituras) ---------- */
 export const db = {
-  /* USERS */
   async getUserByEmail(email: string): Promise<DbUser | null> {
     const em = normEmail(email);
     const rows = await sql<DbUser>`
@@ -115,7 +108,6 @@ export const db = {
   },
 
   async markVerifiedById(id: string): Promise<void> {
-    // FIX: la columna es "id" en users, no "user_id"
     assertNonEmpty(id, "id");
     await sql`UPDATE users SET verified = true WHERE id = ${id}`;
   },
@@ -125,7 +117,6 @@ export const db = {
     await sql`DELETE FROM users WHERE id = ${id}`;
   },
 
-  /* VERIFICATIONS (por user_id) */
   async upsertVerificationForUser(v: {
     id: string;
     user_id: string;
