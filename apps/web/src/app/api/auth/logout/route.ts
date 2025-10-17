@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { clearSession } from "@/lib/auth";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST() {
-  const cs = await cookies();
-  cs.delete("session");
-  return NextResponse.json({ ok: true });
+export async function POST(req: Request) {
+  const res = clearSession();
+  const redirect = NextResponse.redirect(new URL("/", req.url));
+
+  for (const setCookie of res.headers.getSetCookie()) {
+    redirect.headers.append("Set-Cookie", setCookie);
+  }
+  redirect.headers.set("Cache-Control", "no-store");
+  return redirect;
 }
