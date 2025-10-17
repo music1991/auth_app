@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
     const role = (user.role === "admin" ? "admin" : "user") as "admin" | "user";
 
-    const res = await setSession(user.id, role);
+    const res = await setSession(user.id, role, user.name!);
 
     res.headers.set("Cache-Control", "no-store");
     return res;

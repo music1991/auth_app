@@ -6,6 +6,7 @@ neonConfig.fetchConnectionCache = true;
 export type DbUser = {
   id: string;
   name: string | null;
+  last_name: string | null;
   email: string;
   password_hash: string;
   role: "user" | "admin";
@@ -51,7 +52,7 @@ export const db = {
   async getUserByEmail(email: string): Promise<DbUser | null> {
     const em = normEmail(email);
     const rows = await sql<DbUser>`
-      SELECT id, name, email, password_hash, role, verified, created_at
+      SELECT id, name, last_name, email, password_hash, role, verified, created_at
       FROM users
       WHERE lower(email) = ${em}
       LIMIT 1
@@ -62,7 +63,7 @@ export const db = {
   async getUserById(id: string): Promise<DbUser | null> {
     assertNonEmpty(id, "id");
     const rows = await sql<DbUser>`
-      SELECT id, name, email, password_hash, role, verified, created_at
+      SELECT id, name, last_name, email, password_hash, role, verified, created_at
       FROM users
       WHERE id = ${id}
       LIMIT 1
@@ -73,6 +74,7 @@ export const db = {
   async insertUser(u: {
     id: string;
     name: string | null;
+    last_name: string | null;
     email: string;
     password_hash: string;
     role: "user" | "admin";
@@ -83,19 +85,19 @@ export const db = {
     const em = normEmail(u.email);
 
     await sql`
-      INSERT INTO users (id, name, email, password_hash, role, verified)
-      VALUES (${u.id}, ${u.name}, ${em}, ${u.password_hash}, ${u.role}, false)
+      INSERT INTO users (id, name, last_name, email, password_hash, role, verified)
+      VALUES (${u.id}, ${u.name}, ${u.last_name}, ${em}, ${u.password_hash}, ${u.role}, false)
       ON CONFLICT (id) DO NOTHING
     `;
   },
 
   async listUsers(): Promise<
-    Pick<DbUser, "id" | "name" | "email" | "role" | "verified" | "created_at">[]
+    Pick<DbUser, "id" | "name" | "last_name" | "email" | "role" | "verified" | "created_at">[]
   > {
     const rows = await sql<
-      Pick<DbUser, "id" | "name" | "email" | "role" | "verified" | "created_at">
+      Pick<DbUser, "id" | "name" | "last_name" | "email" | "role" | "verified" | "created_at">
     >`
-      SELECT id, name, email, role, verified, created_at
+      SELECT id, name, last_name, email, role, verified, created_at
       FROM users
       ORDER BY created_at DESC
     `;

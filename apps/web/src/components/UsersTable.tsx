@@ -6,6 +6,7 @@ import { toast } from "sonner";
 type User = {
   id: string;
   name: string | null;
+  lastName: string | null;
   email: string;
   role: "admin" | "user";
   verified: boolean;
@@ -81,6 +82,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: string })
         <thead className="bg-muted/50">
           <tr>
             <th className="px-3 py-2 text-left">Name</th>
+            <th className="px-3 py-2 text-left">Last Name</th>
             <th className="px-3 py-2 text-left">Email</th>
             <th className="px-3 py-2 text-left">Role</th>
             <th className="px-3 py-2 text-left">Verified</th>
@@ -94,6 +96,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: string })
             return (
               <tr key={u.id} className="border-t">
                 <td className="px-3 py-2">{u.name ?? "—"}</td>
+                <td className="px-3 py-2">{u.lastName ?? "—"}</td>
                 <td className="px-3 py-2">{u.email}</td>
                 <td className="px-3 py-2 font-medium">{u.role}</td>
                 <td className="px-3 py-2">

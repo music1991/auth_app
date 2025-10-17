@@ -1,4 +1,5 @@
 "use client";
+import PasswordField from "@/components/PasswordField";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -54,12 +55,16 @@ export default function LoginPage() {
         onChange={(e) => setForm({ ...form, email: e.target.value })}
         suppressHydrationWarning
       />
-      <input
+      {/* <input
         className="w-full border p-2"
         type="password"
         placeholder="Password"
         onChange={(e) => setForm({ ...form, password: e.target.value })}
         suppressHydrationWarning
+      /> */}
+      <PasswordField
+        value={form.password}
+        onChange={(e) => setForm({ ...form, password: e.target.value })}
       />
       {loading ?
         (

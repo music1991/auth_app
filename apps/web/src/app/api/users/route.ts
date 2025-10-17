@@ -22,10 +22,11 @@ export async function GET() {
     const safe = users.map((u) => ({
       id: u.id,
       name: u.name ?? null,
+      lastName: u.last_name ?? null,
       email: u.email,
       role: u.role ?? "user",
       verified: !!u.verified,
-      createdAt: u.created_at, // map from DB field
+      createdAt: u.created_at,
     }));
 
     const res = NextResponse.json(safe);

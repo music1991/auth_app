@@ -12,6 +12,7 @@ import {
   Cookie,
   Layers,
 } from "lucide-react";
+import { cookies } from "next/headers";
 
 function CodeInline({ children }: { children: React.ReactNode }) {
   return (
@@ -21,14 +22,18 @@ function CodeInline({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const cs = await cookies();
+  const name = cs.get("name")?.value ?? "";
+  console.log(cs.get("name"))
+  
   return (
     <section className="space-y-8">
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <ShieldCheck className="w-7 h-7 text-green-600" />
-          Welcome
+          Welcome {name ? `${name}` : ""}
         </h1>
 
         <p className="text-gray-700 mt-6">
@@ -139,16 +144,18 @@ export default function HomePage() {
         <Database className="w-6 h-6 text-orange-600 shrink-0" />
         <div className="flex-1 space-y-2">
           <p className="text-gray-700 leading-relaxed break-words">
-            For this project, the database is{" "}
-            <strong>hardcoded in JSON files</strong> (
-            <CodeInline>users.json</CodeInline>,{" "}
-            <CodeInline>verifications.json</CodeInline>) to keep it simple and
-            free of external dependencies.
+            For this project, the database is hosted on{" "}
+            <strong>Neon PostgreSQL</strong>, integrated through{" "}
+            <strong>Vercel Postgres Storage</strong>.
           </p>
           <p className="text-gray-700 leading-relaxed break-words">
-            In a real-world scenario, the recommended approach is a{" "}
-            <strong>server-side database</strong> (e.g., PostgreSQL, MongoDB,
-            MySQL).
+            Each deployment environment connects to a different branch:{" "}
+            <CodeInline>dev</CodeInline> for development and{" "}
+            <CodeInline>main</CodeInline> for production.
+          </p>
+          <p className="text-gray-700 leading-relaxed break-words">
+            This setup allows safe testing and development without affecting production
+            data, while maintaining the same schema and migrations across environments.
           </p>
         </div>
       </div>

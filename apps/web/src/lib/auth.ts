@@ -36,12 +36,13 @@ const COOKIE_OPTS = {
 };
 
 /** Sets cookies and RETURNS a NextResponse you can return from the route */
-export async function setSession(userId: string, role: Role) {
+export async function setSession(userId: string, role: Role, name: string) {
   const token = await signSessionToken(userId, role);
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set("session", token, COOKIE_OPTS);
   res.cookies.set("role", role, COOKIE_OPTS);
+  res.cookies.set("name", name, COOKIE_OPTS);
   res.headers.set("Cache-Control", "no-store");
   return res;
 }
@@ -63,6 +64,7 @@ export function clearSession() {
   const res = NextResponse.json({ ok: true });
   res.cookies.set("session", "", { ...COOKIE_OPTS, maxAge: 0 });
   res.cookies.set("role", "", { ...COOKIE_OPTS, maxAge: 0 });
+  res.cookies.set("name", "", { ...COOKIE_OPTS, maxAge: 0 });
   res.headers.set("Cache-Control", "no-store");
   return res;
 }
