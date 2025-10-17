@@ -44,6 +44,7 @@ export default function LoginPage() {
 
     if (res.ok) {
       router.replace("/");
+      router.refresh();
     }
   }
 
