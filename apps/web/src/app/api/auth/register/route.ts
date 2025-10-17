@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
-import { CODE_TIME, sendVerificationEmail } from "@/lib/email";
+import { CODE_TIME, sendVerificationEmail } from "@/lib/email/verification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

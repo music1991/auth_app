@@ -32,7 +32,7 @@ export default async function HomePage() {
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <ShieldCheck className="w-7 h-7 text-green-600" />
+          {/* <ShieldCheck className="w-7 h-7 text-green-600" /> */}
           Welcome {name ? `${name}` : ""}
         </h1>
 

@@ -1,94 +1,127 @@
 "use client";
 
-
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Countdown from "@/components/CountDown";
 import PasswordField from "@/components/PasswordField";
+import RequirementsList from "@/components/RequirementsList";
 
 
 export default function RegisterPage() {
   const searchParams = useSearchParams();
   const emailFromUrl = searchParams.get("email") ?? "";
 
-  const [form, setForm] = useState({ name: "", lastName: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    name: "",
+    lastName: "",
+    email: "",
+    password: "",
+  });
+  const [pw2, setPw2] = useState("");
+
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
   const [codeExpired, setCodeExpired] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const hasAutoResentRef = useRef(false);
-
   const hasSentCode = !!expiresAt;
 
   useEffect(() => {
     if (emailFromUrl && !form.email) {
       setForm((prev) => ({ ...prev, email: emailFromUrl }));
     }
-  }, [emailFromUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emailFromUrl]);
 
   useEffect(() => {
     const autoResend = async () => {
-      if (!emailFromUrl || hasAutoResentRef.current) setLoading(false);
-      else { 
-        hasAutoResentRef.current = true;
+      if (!emailFromUrl || hasAutoResentRef.current) {
+        setLoading(false);
+        return;
+      }
+      hasAutoResentRef.current = true;
 
-        try {
-          const res = await fetch("/api/auth/resend", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: emailFromUrl }),
-          });
-          const data = await res.json();
+      try {
+        const res = await fetch("/api/auth/resend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: emailFromUrl }),
+        });
+        const data = await res.json();
 
-          if (data.error) {
-            toast.error(data.error);
-            return;
-          }
-
-          setExpiresAt(data.expiresAt ?? null);
-          setDevCode(process.env.NODE_ENV !== "production" ? data.devCode ?? null : null);
-          setCodeExpired(false);
-          toast.success("Code sent to your email.");
-        } catch {
-          toast.error("Could not resend the code. Please try again.");
-        } finally {
-          setLoading(false);
+        if (data.error) {
+          toast.error(data.error);
+          return;
         }
+
+        setExpiresAt(data.expiresAt ?? null);
+        setDevCode(process.env.NODE_ENV !== "production" ? data.devCode ?? null : null);
+        setCodeExpired(false);
+        toast.success("Code sent to your email.");
+      } catch {
+        toast.error("Could not resend the code. Please try again.");
+      } finally {
+        setLoading(false);
       }
     };
 
     autoResend();
   }, [emailFromUrl]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const rules = useMemo(() => {
+    const p1 = form.password;
+    const len = p1.length >= 8;
+    const lower = /[a-z]/.test(p1);
+    const upper = /[A-Z]/.test(p1);
+    const number = /\d/.test(p1);
+    const dot = /\./.test(p1);
+    const match = p1.length > 0 && p1 === pw2;
+    return { len, lower, upper, number, dot, match };
+  }, [form.password, pw2]);
+
+  const allPwOk = Object.values(rules).every(Boolean);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     if (!form.name.trim() || !form.lastName.trim() || !form.email.trim() || !form.password.trim()) {
       toast.error("All fields are required.");
       return;
     }
-    setLoading(true);
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
-
-    if (data.error) {
-      toast.error(data.error);
+    if (!allPwOk) {
+      toast.error(!rules.match ? "Passwords do not match." : "Password does not meet the requirements.");
       return;
     }
-    setLoading(false)
-    setExpiresAt(data.expiresAt ?? null);
-    setDevCode(process.env.NODE_ENV !== "production" ? data.devCode ?? null : null);
-    setCodeExpired(false);
-    toast.success("We sent you a verification code.");
-  };
 
-  const handleResend = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      setExpiresAt(data.expiresAt ?? null);
+      setDevCode(process.env.NODE_ENV !== "production" ? data.devCode ?? null : null);
+      setCodeExpired(false);
+      toast.success("We sent you a verification code.");
+    } catch {
+      toast.error("Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResend() {
     if (!form.email.trim()) return toast.error("First enter your email.");
     const res = await fetch("/api/auth/resend", {
       method: "POST",
@@ -103,36 +136,35 @@ export default function RegisterPage() {
     setDevCode(process.env.NODE_ENV !== "production" ? data.devCode ?? null : null);
     setCodeExpired(false);
     toast.success("Code sent.");
-  };
+  }
 
   return (
     <form onSubmit={handleSubmit} className="max-w-sm mx-auto space-y-4">
       <h1 className="text-2xl font-bold">Validation</h1>
-      {loading ? 
-      (
+
+      {loading ? (
         <div className="flex justify-center items-center">
           <span className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-600"></span>
           <span className="ml-2 text-blue-600">Waiting...</span>
         </div>
-      ) :
-      !hasSentCode ? (
+      ) : !hasSentCode ? (
         <>
           <input
-            className="w-full border p-2"
+            className="w-full border p-2 rounded"
             placeholder="Name"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             suppressHydrationWarning
           />
           <input
-            className="w-full border p-2"
+            className="w-full border p-2 rounded"
             placeholder="Last Name"
             value={form.lastName}
             onChange={(e) => setForm({ ...form, lastName: e.target.value })}
             suppressHydrationWarning
           />
           <input
-            className="w-full border p-2"
+            className="w-full border p-2 rounded"
             type="email"
             placeholder="Email"
             value={form.email}
@@ -143,9 +175,12 @@ export default function RegisterPage() {
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
+          <PasswordField value={pw2} onChange={(e) => setPw2(e.target.value)} />
+          <RequirementsList rules={rules} />
           <button
-            className="bg-blue-600 text-white px-4 py-2 rounded transition transform active:scale-95 active:bg-blue-700 w-full"
+            className="bg-blue-600 text-white px-4 py-2 rounded transition transform active:scale-95 active:bg-blue-700 w-full disabled:opacity-50 disabled:cursor-not-allowed"
             suppressHydrationWarning
+            disabled={!allPwOk}
           >
             Register
           </button>
@@ -202,7 +237,7 @@ function VerificationNotice({
       ) : (
         "—"
       )}
-      {/* (DEV) Code helper, opcional en desarrollo
+      {/* DEV helper
       {devCode ? (
         <div className="mt-1 text-xs text-gray-500">
           (DEV) Code: <span className="font-mono">{devCode}</span>

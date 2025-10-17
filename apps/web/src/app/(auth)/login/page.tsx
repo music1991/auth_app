@@ -1,9 +1,11 @@
 "use client";
+
 import PasswordField from "@/components/PasswordField";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,13 +57,6 @@ export default function LoginPage() {
         onChange={(e) => setForm({ ...form, email: e.target.value })}
         suppressHydrationWarning
       />
-      {/* <input
-        className="w-full border p-2"
-        type="password"
-        placeholder="Password"
-        onChange={(e) => setForm({ ...form, password: e.target.value })}
-        suppressHydrationWarning
-      /> */}
       <PasswordField
         value={form.password}
         onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -78,21 +73,27 @@ export default function LoginPage() {
           suppressHydrationWarning
         >
           Login
-        </button>}
+        </button>
+      }
 
       {showWarningRedirect && (
-        <div className="flex flex-col items-center space-y-2">
-          <span className="text-red-600 text-sm text-center">
+        <div className="flex flex-col items-center space-y-2 p-3 border border-amber-200 bg-amber-50 rounded-md">
+          <span className="text-amber-700 text-sm text-center">
             Your account is not verified. <br />
-            You will be redirected to the verification page in 5 seconds...
+             You will be redirected to the verification page in 5 seconds...
           </span>
         </div>
       )}
 
-      <div className="text-sm text-center">
-        <span className="text-muted-foreground">Don’t have an account?</span>{" "}
+      <div className="text-sm justify-between flex flex-row pl-2 pr-2">
         <Link href={{ pathname: "/register" }} replace className="underline hover:no-underline">
           REGISTER HERE
+        </Link>
+        <Link
+          href="/forgot"
+          className="hover:no-underline"
+        >
+          Forgot your password?
         </Link>
       </div>
 
@@ -107,8 +108,8 @@ export default function LoginPage() {
           <span>
             <span className="font-medium">.Email:</span>{" "}
             <code className="font-mono">admin@gmail.com</code>{" "}
-            </span>
-            <span>
+          </span>
+          <span>
             <span className="font-medium">.Password:</span>{" "}
             <code className="font-mono">admin</code>
           </span>

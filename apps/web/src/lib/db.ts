@@ -22,6 +22,16 @@ export type DbVerification = {
   expires_at: string;
 };
 
+export type DbPasswordReset = {
+  id: string;
+  user_id: string;
+  token_hash: string;
+  expires_at: string;
+  used_at: string | null;
+  created_at: string;
+};
+
+
 interface SqlTag {
   <T = any>(strings: TemplateStringsArray, ...values: any[]): Promise<T[]>;
 }
@@ -171,5 +181,97 @@ export const db = {
   async deleteVerificationsByUserId(user_id: string): Promise<void> {
     assertNonEmpty(user_id, "user_id");
     await sql`DELETE FROM verifications WHERE user_id = ${user_id}`;
+  },
+
+  async insertPasswordReset(args: {
+    id: string;
+    user_id: string;
+    token_hash: string;
+    expires_at: Date;
+  }): Promise<void> {
+    assertNonEmpty(args.id, "id");
+    assertNonEmpty(args.user_id, "user_id");
+    assertNonEmpty(args.token_hash, "token_hash");
+
+    await sql`
+      INSERT INTO password_resets (id, user_id, token_hash, expires_at)
+      VALUES (${args.id}, ${args.user_id}, ${args.token_hash}, ${args.expires_at.toISOString()})
+    `;
+  },
+
+  async getPasswordResetByHash(token_hash: string): Promise<DbPasswordReset | null> {
+    assertNonEmpty(token_hash, "token_hash");
+    const rows = await sql<DbPasswordReset>`
+      SELECT id, user_id, token_hash, expires_at, used_at, created_at
+      FROM password_resets
+      WHERE token_hash = ${token_hash}
+      LIMIT 1
+    `;
+    return rows[0] ?? null;
+  },
+
+  // async markPasswordResetUsed(id: string): Promise<void> {
+  //   assertNonEmpty(id, "id");
+  //   await sql`UPDATE password_resets SET used_at = now() WHERE id = ${id}`;
+  // },
+
+  // async deleteExpiredResets(olderThanIso: string): Promise<void> {
+  //   await sql`
+  //     DELETE FROM password_resets
+  //     WHERE expires_at < ${olderThanIso}
+  //   `;
+  // },
+
+  async updateUserPassword(user_id: string, password_hash: string): Promise<void> {
+    assertNonEmpty(user_id, "user_id");
+    assertNonEmpty(password_hash, "password_hash");
+    await sql`
+      UPDATE users
+      SET password_hash = ${password_hash}
+      WHERE id = ${user_id}
+    `;
+  },
+
+  async consumeResetAndUpdatePassword(reset_id: string, new_password_hash: string): Promise<boolean> {
+    assertNonEmpty(reset_id, "reset_id");
+    assertNonEmpty(new_password_hash, "new_password_hash");
+
+    await sql`BEGIN`;
+    try {
+      const pr = await sql<DbPasswordReset>`
+        SELECT id, user_id, token_hash, expires_at, used_at, created_at
+        FROM password_resets
+        WHERE id = ${reset_id}
+        FOR UPDATE
+      `;
+
+      const row = pr[0];
+      if (!row) { await sql`ROLLBACK`; return false; }
+      const isExpired = new Date(row.expires_at).getTime() < Date.now();
+      const isUsed = !!row.used_at;
+
+      if (isExpired || isUsed) {
+        await sql`ROLLBACK`;
+        return false;
+      }
+
+      await sql`
+        UPDATE users
+        SET password_hash = ${new_password_hash}
+        WHERE id = ${row.user_id}
+      `;
+
+      await sql`
+        UPDATE password_resets
+        SET used_at = now()
+        WHERE id = ${row.id}
+      `;
+
+      await sql`COMMIT`;
+      return true;
+    } catch (e) {
+      await sql`ROLLBACK`;
+      throw e;
+    }
   },
 };

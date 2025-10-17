@@ -1,4 +1,3 @@
-// apps/web/src/lib/auth.ts
 import "server-only";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -32,10 +31,10 @@ const COOKIE_OPTS = {
   sameSite: "lax" as const,
   path: "/",
   secure: isProd,
-  maxAge: 60 * 60 * 3, // 3h (independent of JWT; adjust if you want them aligned)
+  maxAge: 60 * 60 * 3,
 };
 
-/** Sets cookies and RETURNS a NextResponse you can return from the route */
+/** Sets cookies and RETURNS a NextResponse */
 export async function setSession(userId: string, role: Role, name: string) {
   const token = await signSessionToken(userId, role);
 

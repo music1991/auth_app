@@ -1,7 +1,9 @@
 "use client";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+
 
 export default function VerifyPage() {
   const [form, setForm] = useState({ email: "", code: "" });

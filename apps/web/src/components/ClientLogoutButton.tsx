@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
+
 export function ClientLogoutButton() {
   const router = useRouter();
   return (
