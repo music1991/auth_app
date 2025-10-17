@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     const payload =
       process.env.NODE_ENV !== "production"
         ? { error: "Internal Server Error", detail: String(err) }
-        : { error: "Internal Server Error" };
+        : { error: "Internal Server Error", detail: String(err) };
     const res = NextResponse.json(payload, { status: 500 });
     res.headers.set("Cache-Control", "no-store");
     return res;
