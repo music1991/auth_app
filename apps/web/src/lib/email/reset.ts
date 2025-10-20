@@ -16,9 +16,9 @@ export function resetPasswordHtml(resetUrl: string, minutesLeft: number) {
   const safeUrl = sanitize(resetUrl);
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:20px;">
-      <h2 style="color:#111827;">Reset your password</h2>
-      <p>We received a request to reset your password.</p>
-      <p>This link will expire in <strong>${minutesLeft} minutes</strong>.</p>
+      <h2 style="color:black;">Reset your password</h2>
+      <p style="color:black;">We received a request to reset your password.</p>
+      <p style="color:black;">This link will expire in <strong>${minutesLeft} minutes</strong>.</p>
       <a href="${safeUrl}" target="_blank" 
          style="display:inline-block;margin-top:16px;padding:10px 16px;
                 background:#10B981;color:#fff;text-decoration:none;border-radius:8px;">

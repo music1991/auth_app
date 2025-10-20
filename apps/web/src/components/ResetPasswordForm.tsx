@@ -49,8 +49,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
     }
 
     toast.success("Password updated. You can sign in now.");
-    router.replace("/login");
-    router.refresh();
+    router.push("/login");
   };
 
   return (

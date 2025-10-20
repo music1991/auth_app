@@ -1,7 +1,6 @@
 "use client";
 
 import PasswordField from "@/components/PasswordField";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -48,6 +47,9 @@ export default function LoginPage() {
     }
   }
 
+  const handleRedirect = (path: string) => router.push(path);
+
+  
   return (
     <form onSubmit={handleSubmit} className="max-w-sm mx-auto space-y-4">
       <h1 className="text-2xl font-bold">Sign In</h1>
@@ -87,15 +89,22 @@ export default function LoginPage() {
       )}
 
       <div className="text-sm justify-between flex flex-row pl-2 pr-2">
-        <Link href={{ pathname: "/register" }} replace className="underline hover:no-underline">
+        <button 
+            type="button"
+            onClick={ () => handleRedirect('/register') }
+            className="underline hover:no-underline"
+            suppressHydrationWarning
+          >
           REGISTER HERE
-        </Link>
-        <Link
-          href="/forgot"
-          className="hover:no-underline"
-        >
+        </button>
+        <button 
+          type="button"
+            onClick={ () => handleRedirect('/forgot') }
+            className="hover:no-underline"
+            suppressHydrationWarning
+          >
           Forgot your password?
-        </Link>
+        </button>
       </div>
 
       <div className="mt-12 flex gap-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex-col">

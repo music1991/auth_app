@@ -12,7 +12,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   const jar = await cookies();
   const token = jar.get("session")?.value;
 
-  if (isValid(token)) redirect("/");
+  if (isValid(token)) redirect("/login");
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">

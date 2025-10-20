@@ -40,6 +40,10 @@ export default function VerifyPage() {
       <input
         className="w-full border p-2"
         placeholder="Code"
+        type="text"
+        maxLength={6}
+        pattern="[0-9]*"
+        inputMode="numeric"
         onChange={(e) => setForm({ ...form, code: e.target.value })}
       />
       

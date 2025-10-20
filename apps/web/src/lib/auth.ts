@@ -47,7 +47,7 @@ export async function setSession(userId: string, role: Role, name: string) {
 
 /** Reads the session from request cookies */
 export async function getSession(): Promise<Session | null> {
-  const jar = await cookies(); // no await needed
+  const jar = await cookies();
   const token = jar.get("session")?.value;
   if (!token) return null;
   try {

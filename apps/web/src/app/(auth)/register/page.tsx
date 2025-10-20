@@ -25,49 +25,39 @@ export default function RegisterPage() {
   const [devCode, setDevCode] = useState<string | null>(null);
   const [codeExpired, setCodeExpired] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const hasAutoResentRef = useRef(false);
   const hasSentCode = !!expiresAt;
 
-  useEffect(() => {
-    if (emailFromUrl && !form.email) {
-      setForm((prev) => ({ ...prev, email: emailFromUrl }));
+  const autoResend = async () => {
+    if (emailFromUrl === "") {
+      setLoading(false);
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [emailFromUrl]);
 
-  useEffect(() => {
-    const autoResend = async () => {
-      if (!emailFromUrl || hasAutoResentRef.current) {
-        setLoading(false);
+    try { //centralizar esta peticion..
+      const res = await fetch("/api/auth/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailFromUrl }),
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        toast.error(data.error);
         return;
       }
-      hasAutoResentRef.current = true;
 
-      try {
-        const res = await fetch("/api/auth/resend", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: emailFromUrl }),
-        });
-        const data = await res.json();
+      setExpiresAt(data.expiresAt ?? null);
+      setDevCode(process.env.NODE_ENV !== "production" ? data.devCode ?? null : null);
+      setCodeExpired(false);
+      toast.success("Code sent to your email.");
+    } catch {
+      toast.error("Could not resend the code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        if (data.error) {
-          toast.error(data.error);
-          return;
-        }
-
-        setExpiresAt(data.expiresAt ?? null);
-        setDevCode(process.env.NODE_ENV !== "production" ? data.devCode ?? null : null);
-        setCodeExpired(false);
-        toast.success("Code sent to your email.");
-      } catch {
-        toast.error("Could not resend the code. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     autoResend();
   }, [emailFromUrl]);
 
@@ -85,6 +75,7 @@ export default function RegisterPage() {
   const allPwOk = Object.values(rules).every(Boolean);
 
   async function handleSubmit(e: React.FormEvent) {
+    console.log("handleSubmit called");
     e.preventDefault();
 
     if (!form.name.trim() || !form.lastName.trim() || !form.email.trim() || !form.password.trim()) {
@@ -122,20 +113,8 @@ export default function RegisterPage() {
   }
 
   async function handleResend() {
-    if (!form.email.trim()) return toast.error("First enter your email.");
-    const res = await fetch("/api/auth/resend", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: form.email }),
-    });
-    const data = await res.json();
-
-    if (data.error) return toast.error(data.error);
-
-    setExpiresAt(data.expiresAt ?? null);
-    setDevCode(process.env.NODE_ENV !== "production" ? data.devCode ?? null : null);
-    setCodeExpired(false);
-    toast.success("Code sent.");
+    setLoading(true);
+    autoResend();
   }
 
   return (

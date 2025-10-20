@@ -25,8 +25,10 @@ export default function ForgotPasswordPage() {
     });
 
 
-    if (!res.ok) {
-      toast.error("Something went wrong");
+    if (res.status !== 200) {
+      const errorData = await res.json();
+      toast.error(errorData.error || "Something went wrong");
+      setLoading(false);
       return;
     }
 
