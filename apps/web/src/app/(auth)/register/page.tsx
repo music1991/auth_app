@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import PasswordField from "@/components/PasswordField";
 import RequirementsList from "@/components/RequirementsList";
@@ -10,6 +9,7 @@ import Count from "@/components/Count";
 
 
 export default function RegisterPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const emailFromUrl = searchParams.get("email") ?? "";
 
@@ -49,6 +49,7 @@ export default function RegisterPage() {
       setExpiresAt(data.expiresAt ?? null);
       setDevCode(process.env.NODE_ENV !== "production" ? data.devCode ?? null : null);
       setCodeExpired(false);
+
       toast.success("Code sent to your email.");
     } catch {
       toast.error("Could not resend the code. Please try again.");
@@ -59,7 +60,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     autoResend();
-  }, [emailFromUrl]);
+  }, []);
 
   const rules = useMemo(() => {
     const p1 = form.password;
@@ -104,6 +105,7 @@ export default function RegisterPage() {
       setExpiresAt(data.expiresAt ?? null);
       setDevCode(process.env.NODE_ENV !== "production" ? data.devCode ?? null : null);
       setCodeExpired(false);
+
       toast.success("We sent you a verification code.");
     } catch {
       toast.error("Something went wrong.");
@@ -178,9 +180,13 @@ export default function RegisterPage() {
           </div>
 
           {!codeExpired ? (
-            <Link href="/verify" replace className="underline hover:no-underline font-semibold">
+            <button
+              type="button" 
+              onClick={() => router.replace("/login")}
+              className="underline hover:no-underline font-semibold"
+            >
               Validate Code
-            </Link>
+            </button>
           ) : (
             <button
               type="button"

@@ -23,7 +23,7 @@ export default function VerifyPage() {
       const data = await res.json();
       data.error ? toast.error(data.error) : toast.success("Verify correct.");
 
-      if (res.ok) router.replace("/");
+      if (res.ok) router.replace("/login");
       setLoading(false);
     }
   }

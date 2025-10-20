@@ -92,16 +92,16 @@ export default function LoginPage() {
         <button 
             type="button"
             onClick={ () => handleRedirect('/register') }
-            className="underline hover:no-underline"
+            className="underline hover:no-underline active:scale-95 transition-transform duration-150"
             suppressHydrationWarning
           >
           REGISTER HERE
         </button>
         <button 
           type="button"
-            onClick={ () => handleRedirect('/forgot') }
-            className="hover:no-underline"
-            suppressHydrationWarning
+          onClick={ () => handleRedirect('/forgot') }
+          className="hover:no-underline active:scale-95 transition-transform duration-150"
+          suppressHydrationWarning
           >
           Forgot your password?
         </button>
