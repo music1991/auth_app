@@ -10,6 +10,8 @@ import {
   // NavigationMenuTrigger,
   // NavigationMenuContent,
 } from "@/components/ui/navigation-menu";
+import { ProfileButton } from "./ProfileButton";
+import { Button } from "./ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +41,11 @@ export default async function Navbar() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
             )}
+            {/* <NavigationMenuItem>
+              <NavigationMenuLink asChild>
+                <Link href="/profile">Profile</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem> */}
 
             {/* <NavigationMenuItem>
               <NavigationMenuTrigger>More</NavigationMenuTrigger>
@@ -59,8 +66,19 @@ export default async function Navbar() {
             </NavigationMenuItem> */}
           </NavigationMenuList>
         </NavigationMenu>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            asChild
+            variant="secondary"
+            className="px-4 active:scale-95 active:bg-secondary/70 transition-transform duration-150"
+          >
+            <Link href="/profile">Profile</Link>
+          </Button>
 
-        <ClientLogoutButton />
+          {/* destructive style and clear label */}
+          <ClientLogoutButton />
+        </div>
       </div>
     </header>
   );
