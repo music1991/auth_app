@@ -182,7 +182,7 @@ export default function RegisterPage() {
           {!codeExpired ? (
             <button
               type="button" 
-              onClick={() => router.replace("/login")}
+              onClick={() => router.replace("/verify")}
               className="underline hover:no-underline font-semibold"
             >
               Validate Code

@@ -1,83 +1,71 @@
+// components/Navbar.tsx
+"use client";
+
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { ClientLogoutButton } from "./ClientLogoutButton";
-
-import {
-  NavigationMenu,
-  NavigationMenuList,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  // NavigationMenuTrigger,
-  // NavigationMenuContent,
-} from "@/components/ui/navigation-menu";
+import { usePathname } from "next/navigation";
 import { ProfileButton } from "./ProfileButton";
-import { Button } from "./ui/button";
 
-export const dynamic = "force-dynamic";
+interface NavItem {
+  href: string;
+  label: string;
+  adminOnly?: boolean;
+}
 
-export default async function Navbar() {
-  const cs = await cookies();
-  const role = cs.get("role")?.value ?? "user";
+export function Navbar({ role }: { role: string }) {
+  const pathname = usePathname();
   const isAdmin = role === "admin";
 
+  const navItems: NavItem[] = [
+    { href: "/", label: "Dashboard" },
+    { href: "/users", label: "Users", adminOnly: true },
+    { 
+      href: "/about", // Ahora va a la página de redirección
+      label: "About Us" 
+    },
+  ];
+
+  const filteredNavItems = navItems.filter(item => 
+    !item.adminOnly || (item.adminOnly && isAdmin)
+  );
+
+  const isActive = (href: string) => {
+    if (href === "/dashboard") {
+      return pathname?.startsWith("/dashboard");
+    }
+    return pathname === href;
+  };
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/60 backdrop-blur">
+    <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 shadow-sm">
       <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="font-semibold text-lg">
-          Auth App (Demo)
+        {/* Brand */}
+        <Link 
+          href="/" 
+          className="font-semibold text-lg text-gray-800 hover:text-gray-900 transition-colors"
+        >
+          Teams Improve
         </Link>
-        <NavigationMenu>
-          <NavigationMenuList>
-            <NavigationMenuItem>
-              <NavigationMenuLink asChild>
-                <Link href="/">Home</Link>
-              </NavigationMenuLink>
-            </NavigationMenuItem>
 
-            {isAdmin && (
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link href="/users">Users</Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            )}
-            {/* <NavigationMenuItem>
-              <NavigationMenuLink asChild>
-                <Link href="/profile">Profile</Link>
-              </NavigationMenuLink>
-            </NavigationMenuItem> */}
+        {/* Navigation */}
+        <nav className="flex items-center gap-1">
+          {filteredNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`px-4 py-2 text-sm font-medium transform hover:-translate-y-0.5 transition-all duration-200 ${
+                isActive(item.href)
+                  ? "text-green-600 border-b-2 border-green-600"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
-            {/* <NavigationMenuItem>
-              <NavigationMenuTrigger>More</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid gap-3 p-4 w-[200px]">
-                  <li>
-                    <NavigationMenuLink asChild>
-                      <Link href="/about">About</Link>
-                    </NavigationMenuLink>
-                  </li>
-                  <li>
-                    <NavigationMenuLink asChild>
-                      <Link href="/settings">Settings</Link>
-                    </NavigationMenuLink>
-                  </li>
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem> */}
-          </NavigationMenuList>
-        </NavigationMenu>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            asChild
-            variant="secondary"
-            className="px-4 active:scale-95 active:bg-secondary/70 transition-transform duration-150"
-          >
-            <Link href="/profile">Profile</Link>
-          </Button>
-
-          {/* destructive style and clear label */}
-          <ClientLogoutButton />
+        {/* Profile */}
+        <div className="flex items-center">
+          <ProfileButton />
         </div>
       </div>
     </header>
