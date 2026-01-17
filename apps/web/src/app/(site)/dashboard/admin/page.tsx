@@ -19,7 +19,6 @@ export default function AdminDashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
@@ -45,10 +44,8 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Stats */}
         <AdminStats />
 
-        {/* Tabs */}
         <div className="mb-8">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-1 border border-gray-200 inline-flex">
             {tabs.map((tab) => {
@@ -71,7 +68,6 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Content */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/60">
           {activeTab === "users" && <AdminUserManagement />}
           {activeTab === "tasks" && <AdminTaskAssignment />}

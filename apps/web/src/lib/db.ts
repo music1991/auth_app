@@ -229,18 +229,6 @@ export const db = {
     return rows[0] ?? null;
   },
 
-  // async markPasswordResetUsed(id: string): Promise<void> {
-  //   assertNonEmpty(id, "id");
-  //   await sql`UPDATE password_resets SET used_at = now() WHERE id = ${id}`;
-  // },
-
-  // async deleteExpiredResets(olderThanIso: string): Promise<void> {
-  //   await sql`
-  //     DELETE FROM password_resets
-  //     WHERE expires_at < ${olderThanIso}
-  //   `;
-  // },
-
   async updateUserPassword(user_id: string, password_hash: string): Promise<void> {
     assertNonEmpty(user_id, "user_id");
     assertNonEmpty(password_hash, "password_hash");
@@ -311,7 +299,7 @@ export const db = {
 
   async upsertDataUser(args: {
   user_id: string;
-  first_name?: string | null; // ahora opcionales para permitir updates parciales
+  first_name?: string | null;
   last_name?: string | null;
   phone?: string | null;
   bio?: string | null;
@@ -324,7 +312,6 @@ export const db = {
 }): Promise<DbDataUser> {
   assertNonEmpty(args.user_id, "user_id");
 
-  // Normaliza undefined -> null para poder usar COALESCE en el UPSERT
   const a = {
     user_id: args.user_id,
     first_name: args.first_name ?? null,
@@ -339,8 +326,6 @@ export const db = {
     avatar_url: args.avatar_url ?? null,
   };
 
-  // Si es INSERT, al menos first_name y last_name deben existir (NOT NULL en la tabla).
-  // Si la fila ya existe, el ON CONFLICT + COALESCE mantendrá los valores previos.
   const rows = await sql<DbDataUser>`
     INSERT INTO data_user (
       user_id, first_name, last_name, phone, bio,
@@ -393,14 +378,12 @@ export const db = {
     return rows;
   },
 
-  // Optional: user + data_user in one call (LEFT JOIN)
 async getUserWithDataById(
   id: string
 ): Promise<(DbUser & { data: DbDataUser | null }) | null> {
   assertNonEmpty(id, "id");
 
   const rows = await sql<{
-    // users (base)
     id: string;
     name: string | null;
     last_name: string | null;
@@ -410,11 +393,10 @@ async getUserWithDataById(
     verified: boolean;
     created_at: string;
 
-    // data_user (nullable)
     data_id: string | null;
-    user_id: string | null;       // du.user_id
-    first_name: string | null;    // du.first_name
-    data_last_name: string | null; // du.last_name AS data_last_name
+    user_id: string | null;
+    first_name: string | null;
+    data_last_name: string | null;
     phone: string | null;
     bio: string | null;
     country: string | null;
@@ -476,7 +458,7 @@ async getUserWithDataById(
         id: r.data_id!,
         user_id: r.user_id!,
         first_name: r.first_name!,
-        last_name: r.data_last_name!, // <- alias para no chocar con users.last_name
+        last_name: r.data_last_name!,
         phone: r.phone,
         bio: r.bio,
         country: r.country,
@@ -506,7 +488,6 @@ async getUserWithDataById(
     `;
   },
 
-    // Retorna el blob y el mime (para servir el archivo)
   async getAvatarBlobByUserId(user_id: string): Promise<{ avatar_blob: Uint8Array | null; avatar_mime: string | null } | null> {
     assertNonEmpty(user_id, "user_id");
     const rows = await sql<{ avatar_blob: any; avatar_mime: string | null }>`
@@ -515,11 +496,9 @@ async getUserWithDataById(
       WHERE user_id = ${user_id}
       LIMIT 1
     `;
-    // Nota: 'any' para avatar_blob por diferencias de tipo (Buffer/Uint8Array) según entorno.
     return rows[0] ?? null;
   },
 
-  // Borra el avatar binario (lo deja en NULL)
   async clearAvatarBlobByUserId(user_id: string): Promise<void> {
     assertNonEmpty(user_id, "user_id");
     await sql`

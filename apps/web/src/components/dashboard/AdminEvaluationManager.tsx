@@ -1,4 +1,3 @@
-// components/dashboard/AdminEvaluationManager.tsx
 "use client";
 
 import { useState } from "react";
@@ -203,7 +202,6 @@ export default function AdminEvaluationManager() {
               <p>Respuestas: {evaluation.responses}/{evaluation.totalUsers}</p>
             </div>
 
-            {/* Barra de progreso */}
             {evaluation.totalUsers > 0 && (
               <div className="mb-4">
                 <div className="flex justify-between text-xs text-gray-600 mb-1">

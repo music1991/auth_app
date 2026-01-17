@@ -1,35 +1,70 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { dashboardDb } from "@/lib/dashboard-db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (session.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    if (session.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const { searchParams } = new URL(req.url);
+
+    const withMetrics = searchParams.get("withMetrics") === "1";
+
+    const id = searchParams.get("id");
+
+    if (id) {
+      const u = await db.getUserWithDataById(id);
+      if (!u) {
+        const res = NextResponse.json({ error: "User not found" }, { status: 404 });
+        res.headers.set("Cache-Control", "no-store");
+        return res;
+      }
+
+      const safe = {
+        id: u.id,
+        name: u.name ?? null,
+        lastName: u.last_name ?? null,
+        email: u.email,
+        role: u.role ?? "user",
+        verified: !!u.verified,
+        createdAt: u.created_at,
+      };
+
+      const res = NextResponse.json(safe);
+      res.headers.set("Cache-Control", "no-store");
+      return res;
     }
 
-    const users = await db.listUsers();
+    if (withMetrics) {
+      const users = await dashboardDb.getUsersWithMetrics();
 
-    const safe = users.map((u) => ({
-      id: u.id,
-      name: u.name ?? null,
-      lastName: u.last_name ?? null,
-      email: u.email,
-      role: u.role ?? "user",
-      verified: !!u.verified,
-      createdAt: u.created_at,
-    }));
+      const safe = users.map((u: any) => ({
+        id: u.id,
+        name: u.name ?? null,
+        lastName: u.last_name ?? null,
+        email: u.email,
+        role: (u.role ?? "user") as "user" | "admin",
+        status: (u.status ?? "active") as "active" | "inactive",
+        lastLogin: u.last_login ?? null,
+        verified: !!u.verified,
+        createdAt: u.created_at,
 
-    const res = NextResponse.json(safe);
-    res.headers.set("Cache-Control", "no-store");
-    return res;
+        tasksAssigned: Number(u.tasks_assigned ?? 0),
+        tasksCompleted: Number(u.tasks_completed ?? 0),
+        productivityScore: Number(u.productivity_score ?? 0),
+      }));
+
+      const res = NextResponse.json(safe);
+      res.headers.set("Cache-Control", "no-store");
+      return res;
+    }
+
   } catch (err) {
     console.error("GET /admin/users failed:", err);
     const res = NextResponse.json(

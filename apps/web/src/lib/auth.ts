@@ -1,4 +1,3 @@
-// lib/auth.ts - MEJORADO
 import "server-only";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
@@ -12,7 +11,6 @@ function getSecret() {
   return new TextEncoder().encode(process.env.JWT_SECRET);
 }
 
-// Timeout de inactividad (30 minutos)
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
 
 export async function signSessionToken(userId: string, role: Role) {
@@ -34,8 +32,7 @@ export async function verifySessionToken(token: string): Promise<Session | null>
   try {
     const { payload } = await jwtVerify(token, getSecret());
     
-    // Verificar timeout de inactividad
-    const lastActivity = (payload.lastActivity as number) * 1000; // convertir a ms
+    const lastActivity = (payload.lastActivity as number) * 1000;
     if (Date.now() - lastActivity > INACTIVITY_TIMEOUT) {
       return null;
     }
@@ -57,7 +54,7 @@ const COOKIE_OPTS = {
   sameSite: "lax" as const,
   path: "/",
   secure: process.env.NODE_ENV === "production",
-  maxAge: 60 * 60 * 3, // 3 horas
+  maxAge: 60 * 60 * 3,
 };
 
 export async function setSession(userId: string, role: Role, name: string) {
@@ -68,7 +65,6 @@ export async function setSession(userId: string, role: Role, name: string) {
   res.cookies.set("role", role, COOKIE_OPTS);
   res.cookies.set("name", name, COOKIE_OPTS);
   
-  // Headers para prevenir cache
   res.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
   res.headers.set("Pragma", "no-cache");
   res.headers.set("Expires", "0");
@@ -89,7 +85,6 @@ export function clearSession() {
   res.cookies.set("role", "", { ...COOKIE_OPTS, maxAge: 0 });
   res.cookies.set("name", "", { ...COOKIE_OPTS, maxAge: 0 });
   
-  // Headers para prevenir cache
   res.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
   res.headers.set("Pragma", "no-cache");
   res.headers.set("Expires", "0");
@@ -97,12 +92,10 @@ export function clearSession() {
   return res;
 }
 
-// Función para actualizar la actividad (usar en cada request importante)
 export async function updateSessionActivity() {
   const session = await getSession();
   if (!session) return null;
   
-  // Renovar el token con nueva timestamp de actividad
   const newToken = await new SignJWT({ 
     role: session.role, 
     iat: Math.floor(Date.now() / 1000),

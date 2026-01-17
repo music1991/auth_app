@@ -1,4 +1,3 @@
-// components/dashboard/UserStats.tsx
 "use client";
 
 import { 
@@ -107,28 +106,18 @@ export default function UserStats() {
             key={index}
             className={`relative p-4 rounded-2xl border ${stat.borderColor} ${stat.bgColor} transition-all duration-300 hover:scale-105 hover:shadow-lg group overflow-hidden`}
           >
-            {/* Background gradient accent */}
             <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${stat.color} opacity-10 rounded-full -translate-y-8 translate-x-8`}></div>
-            
             <div className="relative z-10">
-              {/* Header with icon, title and trend */}
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
                   <IconComponent size={16} className={stat.iconColor} />
                   <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{stat.title}</p>
                 </div>
-                {/* <span className={`text-xs font-medium px-2 py-1 rounded-full bg-white/80 backdrop-blur-sm ${stat.color.replace('from-', 'text-').split(' ')[0]}`}>
-                  {stat.trend}
-                </span> */}
               </div>
               
-              {/* Main value */}
               <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
-              
-              {/* Description */}
               <p className="text-xs text-gray-500 mb-3">{stat.description}</p>
               
-              {/* Progress bar only for productivity */}
               {stat.title === "Productivity" && (
                 <div className="mt-2">
                   <div className="w-full bg-white/50 rounded-full h-1.5">

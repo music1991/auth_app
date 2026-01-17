@@ -74,7 +74,6 @@ export default function UsersTable({ currentUserId }: { currentUserId: string })
     }
   };
 
-  // Loading mejorado
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
@@ -135,7 +134,6 @@ export default function UsersTable({ currentUserId }: { currentUserId: string })
                   key={u.id} 
                   className="transition-colors duration-150 hover:bg-gray-50/50"
                 >
-                  {/* User Info */}
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
@@ -153,7 +151,6 @@ export default function UsersTable({ currentUserId }: { currentUserId: string })
                     </div>
                   </td>
 
-                  {/* Role */}
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <Shield className={`w-4 h-4 ${
@@ -169,7 +166,6 @@ export default function UsersTable({ currentUserId }: { currentUserId: string })
                     </div>
                   </td>
 
-                  {/* Verification Status */}
                   <td className="px-6 py-4">
                     {u.verified ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -184,7 +180,6 @@ export default function UsersTable({ currentUserId }: { currentUserId: string })
                     )}
                   </td>
 
-                  {/* Created Date */}
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <Calendar className="w-4 h-4" />
@@ -192,7 +187,6 @@ export default function UsersTable({ currentUserId }: { currentUserId: string })
                     </div>
                   </td>
 
-                  {/* Actions */}
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       {!u.verified && (

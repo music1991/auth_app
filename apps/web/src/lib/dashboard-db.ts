@@ -1,10 +1,6 @@
 import "server-only";
 import { sql } from "./db";
 
-// =============================================
-// TIPOS PARA EL DASHBOARD
-// =============================================
-
 export type DashboardTask = {
   id: string;
   title: string;
@@ -89,12 +85,7 @@ export type UserWithMetrics = {
   productivity_score: number;
 };
 
-// =============================================
-// CONSULTAS PARA USUARIO
-// =============================================
-
 export const dashboardDb = {
-  // ========== ESTADÍSTICAS DE USUARIO ==========
   async getUserStats(userId: string): Promise<UserStats> {
     const rows = await sql<{
       pending_tasks: number;
@@ -139,7 +130,6 @@ export const dashboardDb = {
       };
     }
 
-    // Convertir segundos a formato horas:minutos
     const hours = Math.floor(stats.today_work_seconds / 3600);
     const minutes = Math.floor((stats.today_work_seconds % 3600) / 60);
     const todayWorkTime = `${hours}h ${minutes}m`;
@@ -154,7 +144,6 @@ export const dashboardDb = {
     };
   },
 
-  // ========== TAREAS DEL USUARIO ==========
   async getUserTasks(userId: string): Promise<DashboardTask[]> {
     const rows = await sql<DashboardTask>`
       SELECT 
@@ -205,7 +194,6 @@ export const dashboardDb = {
     `;
   },
 
-  // ========== SESIONES DE TRABAJO ==========
   async getWorkSessions(userId: string, limit: number = 10): Promise<WorkSession[]> {
     const rows = await sql<WorkSession>`
       SELECT 
@@ -262,7 +250,6 @@ export const dashboardDb = {
     `;
   },
 
-  // ========== EVALUACIONES DEL USUARIO ==========
   async getUserEvaluations(userId: string): Promise<Evaluation[]> {
     const rows = await sql<Evaluation>`
       SELECT 
@@ -293,11 +280,6 @@ export const dashboardDb = {
     return rows;
   },
 
-  // =============================================
-  // CONSULTAS PARA ADMINISTRADOR
-  // =============================================
-
-  // ========== ESTADÍSTICAS DE ADMIN ==========
   async getAdminStats(): Promise<AdminStats> {
   const rows = await sql<{
     total_users: number;
@@ -340,7 +322,6 @@ export const dashboardDb = {
   };
 },
 
-  // ========== GESTIÓN DE USUARIOS ==========
   async getUsersWithMetrics(): Promise<UserWithMetrics[]> {
     const rows = await sql<UserWithMetrics & {
       last_login: string;
@@ -388,7 +369,6 @@ export const dashboardDb = {
     `;
   },
 
-  // ========== PLANTILLAS DE TAREAS ==========
   async getTaskTemplates(): Promise<TaskTemplate[]> {
     const rows = await sql<TaskTemplate>`
       SELECT 
@@ -424,7 +404,6 @@ export const dashboardDb = {
     return rows[0].id;
   },
 
-  // ========== ASIGNACIÓN DE TAREAS ==========
   async assignTask(task: {
     templateId: string;
     userId: string;
@@ -442,7 +421,6 @@ export const dashboardDb = {
     return rows[0].id;
   },
 
-  // ========== GESTIÓN DE EVALUACIONES ==========
   async getEvaluationTemplates(): Promise<any[]> {
     const rows = await sql<{
       id: string;
@@ -517,7 +495,6 @@ export const dashboardDb = {
     `;
   },
 
-  // ========== MÉTRICAS DE PRODUCTIVIDAD ==========
   async updateProductivityMetric(metric: {
     userId: string;
     date: string;

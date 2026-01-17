@@ -1,4 +1,3 @@
-// components/dashboard/UserTaskManager.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -54,15 +53,13 @@ export default function UserTaskManager() {
       });
 
       if (response.ok) {
-        // Actualizar estado local
         setTasks(tasks.map(task => 
           task.id === taskId ? { ...task, status: newStatus } : task
         ));
         if (selectedTask?.id === taskId) {
           setSelectedTask({ ...selectedTask, status: newStatus });
         }
-        
-        // Si se completa, actualizar progreso a 100%
+
         if (newStatus === 'completed') {
           await updateTaskProgress(taskId, 100);
         }
@@ -150,7 +147,6 @@ export default function UserTaskManager() {
       <h2 className="text-xl font-semibold mb-6">My Tasks</h2>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Lista de Tareas */}
         <div className="space-y-4">
           {tasks.map((task) => (
             <div
@@ -221,7 +217,6 @@ export default function UserTaskManager() {
           )}
         </div>
 
-        {/* Detalle de Tarea */}
         <div className="bg-gray-50 rounded-lg p-6">
           {selectedTask ? (
             <div>

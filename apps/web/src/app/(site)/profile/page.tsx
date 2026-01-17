@@ -57,7 +57,6 @@ export default function ProfilePage() {
   const [avatarBlob, setAvatarBlob] = useState<string | null>(null);
   const [avatarKey, setAvatarKey] = useState(0);
 
-  // Función para cargar el avatar blob
   const loadAvatarBlob = async (userId: string) => {
     try {
       const res = await fetch(`/api/profile/avatar?u=${userId}`);
@@ -99,7 +98,6 @@ export default function ProfilePage() {
     loadProfile();
   }, []);
 
-  // Cleanup del blob URL
   useEffect(() => {
     return () => {
       if (avatarBlob) {
@@ -140,7 +138,6 @@ export default function ProfilePage() {
     setFormSeed((k) => k + 1);
   }
 
-  // Función para manejar la actualización del avatar
   const handleAvatarUpdate = async () => {
     if (user?.id) {
       await loadAvatarBlob(user.id);
@@ -149,7 +146,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Loading mejorado
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
@@ -205,7 +201,6 @@ export default function ProfilePage() {
 
   return (
     <section className="space-y-8 mt-8 animate-in fade-in duration-500">
-      {/* Header mejorado */}
       <div className="flex items-center justify-between px-6">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
@@ -225,11 +220,9 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* Card principal */}
       <Card className="overflow-hidden border shadow-sm">
         <CardContent className="py-8 px-6 lg:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Sección izquierda - Avatar e info */}
             <div className="space-y-6">
               <div className="flex items-center gap-4">
                 <div className="relative h-24 w-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 shadow-md border">
@@ -265,7 +258,6 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Sección derecha - Formulario */}
             <div className="lg:col-span-2">
               <form
                 key={formSeed}
@@ -273,7 +265,6 @@ export default function ProfilePage() {
                 onSubmit={saveProfile}
                 className="space-y-6"
               >
-                {/* Información básica */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="username" className="flex items-center gap-2">
@@ -337,7 +328,6 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                {/* Bio */}
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
                   <textarea
@@ -350,7 +340,6 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                {/* Dirección */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label>Country</Label>
@@ -396,7 +385,6 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                {/* Botones de acción */}
                 {isEditing && (
                   <div className="flex items-center gap-3 pt-4 border-t">
                     <Button 
@@ -423,7 +411,6 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* EditAvatar modal */}
       <EditAvatar
         letterUser={displayName[0]?.toUpperCase()}
         open={showEditAvatar}

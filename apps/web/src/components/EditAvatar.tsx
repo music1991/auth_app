@@ -14,7 +14,6 @@ interface EditAvatarProps {
   letterUser: string;
 }
 
-// ===== STYLED COMPONENTS =====
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -367,7 +366,6 @@ const AvatarOption = styled.img`
   }
 `;
 
-// ===== MAIN COMPONENT =====
 const EditAvatar: React.FC<EditAvatarProps> = ({
   open,
   onClose,
@@ -381,7 +379,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
   const [loading, setLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Estado centralizado para modales internos
   const [modalState, setModalState] = useState<{
     mainModal: boolean;
     selectionModal: boolean;
@@ -408,16 +405,13 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Imagen que se muestra en el preview
   const displayImage = pendingDelete ? null : (temporaryImage || originalImage);
 
-  // Hay cambios no guardados si hay imagen temporal o borrado pendiente
   useEffect(() => {
     const hasChanges = temporaryImage !== null || pendingDelete;
     setHasUnsavedChanges(hasChanges);
   }, [temporaryImage, pendingDelete]);
 
-  // Sincronizar cuando cambia initialImage
   useEffect(() => {
     setOriginalImage(initialImage);
     setTemporaryImage(null);
@@ -433,7 +427,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
     }
   }, [open]);
 
-  // Manejo centralizado de modales
   const handleModal = (modalName: keyof typeof modalState, isOpen: boolean) => {
     setModalState(prev => ({
       ...prev,
@@ -441,7 +434,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
     }));
   };
 
-  // Función para cerrar todos los modales
   const closeAllModals = () => {
     setModalState({
       mainModal: false,
@@ -452,7 +444,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
     });
     setCapturedImage(null);
 
-    // Detener cámara si está activa
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -462,7 +453,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
     }
   };
 
-  // Función para cerrar con la X - DESCARTAR CAMBIOS
   const handleCloseComplete = () => {
     setTemporaryImage(null);
     setPendingDelete(false);
@@ -471,7 +461,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
     onClose();
   };
 
-  // Función para FINISH - GUARDAR CAMBIOS PERMANENTEMENTE
   const handleFinish = async () => {
     if (!hasUnsavedChanges) {
       closeAllModals();
@@ -483,12 +472,10 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
       setLoading(true);
 
       if (pendingDelete) {
-        // Borrar permanentemente del servidor
         const res = await fetch("/api/profile/avatar", { method: "DELETE" });
         if (!res.ok) throw new Error("Delete failed");
         toast.success("Avatar removed successfully.");
       } else if (temporaryImage) {
-        // Validar que la imagen temporal no esté corrupta
         if (!temporaryImage.startsWith('data:image/')) {
           throw new Error("Invalid image data");
         }
@@ -499,7 +486,7 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
       }
 
       closeAllModals();
-      onFinish(true); // Notificar al padre que hubo cambios
+      onFinish(true);
 
     } catch (error) {
       console.error(error);
@@ -509,13 +496,11 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
     }
   };
 
-  // DELETE TEMPORAL - Solo marca para borrar, no ejecuta permanentemente
   const handleTemporaryDelete = () => {
     setPendingDelete(true);
     setTemporaryImage(null);
   };
 
-  // Helpers
   const generateRandomAvatar = (
     type: "avataaars" | "pixel-art" | "bottts",
     seed?: string
@@ -536,7 +521,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
     }
   };
 
-  // Cámara - Versión mejorada
   useEffect(() => {
     let isMounted = true;
 
@@ -546,7 +530,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
 
         setCameraReady(false);
 
-        // Detener stream anterior si existe
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop());
         }
@@ -598,7 +581,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
     handleModal('selectionModal', false);
   };
 
-  // CAPTURE PHOTO - Versión corregida
   const capturePhoto = () => {
     if (!videoRef.current || !streamRef.current) return;
 
@@ -611,19 +593,15 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
       return;
     }
 
-    // Usar dimensiones reales del video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    // Dibujar el frame actual
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     try {
-      // Convertir a data URL - usar JPEG para evitar problemas
       const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
       setCapturedImage(dataUrl);
 
-      // Cerrar cámara y abrir editor
       handleModal('cameraModal', false);
       handleModal('cropModal', true);
 
@@ -670,32 +648,18 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
     if (!res.ok) throw new Error("Upload failed");
   }
 
-  // GUARDAR TEMPORALMENTE - VERSIÓN CORREGIDA
   const saveTemporaryImage = async () => {
     if (!capturedImage || !croppedAreaPixels) return;
-    
     try {
       setLoading(true);
-      
-      console.log('Starting crop process...');
-
-      // 1. PRIMERO procesar la imagen y guardar el resultado
       const croppedDataUrl = await getCroppedImg(capturedImage, croppedAreaPixels);
-      
-      console.log('Cropping completed, data URL length:', croppedDataUrl.length);
-      
-      // Validar resultado
+
       if (!croppedDataUrl || !croppedDataUrl.startsWith('data:image/')) {
         throw new Error("Failed to create valid cropped image");
       }
 
-      // 2. GUARDAR la imagen temporal
       setTemporaryImage(croppedDataUrl);
       setPendingDelete(false);
-      
-      console.log('Temporary image saved successfully');
-
-      // 3. SOLO DESPUÉS de guardar, limpiar los estados temporales
       setTimeout(() => {
         setCapturedImage(null);
         setCroppedAreaPixels(null);
@@ -712,7 +676,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
     }
   };
 
-  // Generar avatares cuando se abre el modal
   useEffect(() => {
     if (modalState.avatarModal) {
       const newAvatars = Array.from({ length: 12 }, () =>
@@ -722,7 +685,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
     }
   }, [modalState.avatarModal, avatarType]);
 
-  // Iconos modernos con SVG
   const Icons = {
     Upload: () => (
       <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -764,7 +726,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
 
   return (
     <>
-      {/* Modal Principal */}
       {modalState.mainModal && (
         <ModalOverlay>
           <ModalContent width="400px">
@@ -780,7 +741,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
                 </div>
               ) : (
                 <div style={{ textAlign: "center" }}>
-                  {/* Avatar Preview */}
                   <AvatarPreviewContainer>
                     {displayImage ? (
                       <AvatarImage src={displayImage} alt="Avatar preview" />
@@ -831,7 +791,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
         </ModalOverlay>
       )}
 
-      {/* Input file oculto */}
       <input
         type="file"
         accept="image/*"
@@ -840,7 +799,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
         onChange={handleFileChange}
       />
 
-      {/* Modal de selección */}
       {modalState.selectionModal && (
         <ModalOverlay>
           <ModalContent width="400px">
@@ -887,7 +845,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
         </ModalOverlay>
       )}
 
-      {/* Modal de cámara */}
       {modalState.cameraModal && (
         <ModalOverlay>
           <ModalContent width="400px">
@@ -924,7 +881,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
         </ModalOverlay>
       )}
 
-      {/* Modal de recorte */}
       {modalState.cropModal && (
         <ModalOverlay>
           <ModalContent width="400px">
@@ -983,7 +939,6 @@ const EditAvatar: React.FC<EditAvatarProps> = ({
         </ModalOverlay>
       )}
 
-      {/* Modal de avatares */}
       {modalState.avatarModal && (
         <ModalOverlay>
           <ModalContent width="80%" maxWidth="800px">

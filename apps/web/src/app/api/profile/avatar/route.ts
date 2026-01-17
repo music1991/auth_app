@@ -1,8 +1,7 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { sql } from "@/lib/db"; // tu SqlTag ya exportado
-import { headers } from "next/headers";
+import { sql } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,16 +13,13 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Toma el content-type del propio request
     const contentType = req.headers.get("content-type") || "application/octet-stream";
 
-    // Límite 2MB (ajústalo si querés)
     const buf = Buffer.from(await req.arrayBuffer());
     if (buf.length > 2 * 1024 * 1024) {
       return NextResponse.json({ error: "File too large (max 2MB)" }, { status: 413 });
     }
 
-    // UPSERT: crea fila si no existe (first_name / last_name NOT NULL)
     await sql`
       INSERT INTO data_user (user_id, first_name, last_name, avatar_blob, avatar_mime)
       VALUES (${session.sub}, '', '', ${buf}, ${contentType})
@@ -62,7 +58,7 @@ export async function GET() {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const body = Buffer.from(row.avatar_blob); // asegura Buffer para header length
+    const body = Buffer.from(row.avatar_blob);
     return new Response(body, {
       status: 200,
       headers: {

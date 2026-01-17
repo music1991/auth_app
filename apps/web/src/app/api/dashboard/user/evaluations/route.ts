@@ -31,10 +31,8 @@ export async function POST(request: NextRequest) {
     const { action, data } = body;
 
     if (action === 'start') {
-      // Lógica para iniciar una evaluación
       return NextResponse.json({ success: true, message: "Evaluation started" });
     } else if (action === 'submit') {
-      // Lógica para enviar una evaluación
       return NextResponse.json({ success: true, message: "Evaluation submitted" });
     } else {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });

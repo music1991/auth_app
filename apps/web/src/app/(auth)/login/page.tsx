@@ -36,21 +36,17 @@ export default function LoginPage() {
         
         if (data.code === 100) {
           setShowWarningRedirect(true);
-          // Navegar inmediatamente sin esperar
           setTimeout(() => {
             router.replace(`/register?email=${encodeURIComponent(form.email)}`);
-          }, 100); // Reducido a 100ms para navegación casi inmediata
+          }, 100);
         }
         setLoading(false)
         return;
       }
 
-      // ✅ ÉXITO: Navegar inmediatamente sin esperar
       if (res.ok) {
-        // Usar replace para evitar que vuelva atrás al login
-        window.location.href = "/"; // Esto recarga la página y evita problemas de cache
+        window.location.href = "/";
         return;
-        // Alternativa: router.replace("/"); router.refresh();
       }
       
     } catch (error) {
@@ -58,15 +54,10 @@ export default function LoginPage() {
       toast.error("An error occurred during login");
       setLoading(false);
     }
-    // } finally {
       
   }
 
-  // const handleRedirect = (path: string) => {
-  //   router.push(path);
-  // };
 
-  // Navegación inmediata para los botones de register/forgot
   const handleQuickRedirect = (path: string) => {
     router.push(path);
   };

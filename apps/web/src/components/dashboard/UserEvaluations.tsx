@@ -1,4 +1,3 @@
-// components/dashboard/UserEvaluations.tsx
 "use client";
 
 import { useState } from "react";
@@ -66,7 +65,6 @@ export default function UserEvaluations() {
   };
 
   const startEvaluation = (evaluationId: string) => {
-    // Aquí iría la lógica para iniciar la evaluación
     alert(`Iniciando evaluación: ${evaluationId}`);
   };
 

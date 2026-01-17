@@ -1,4 +1,3 @@
-// components/dashboard/UserTimeTracker.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,7 +6,7 @@ interface WorkSession {
   id: string;
   startTime: Date;
   endTime?: Date;
-  duration?: number; // en minutos
+  duration?: number;
   active: boolean;
 }
 
@@ -16,7 +15,6 @@ export default function UserTimeTracker() {
   const [sessions, setSessions] = useState<WorkSession[]>([]);
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  // Simular detección de actividad
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
@@ -64,7 +62,6 @@ export default function UserTimeTracker() {
     <div className="p-6">
       <h2 className="text-xl font-semibold mb-6">Seguimiento de Tiempo</h2>
 
-      {/* Sesión Actual */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
         <div className="flex justify-between items-center">
           <div>
@@ -102,7 +99,6 @@ export default function UserTimeTracker() {
         </div>
       </div>
 
-      {/* Historial de Sesiones */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Historial de Jornadas</h3>
         <div className="space-y-3">

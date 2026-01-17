@@ -1,4 +1,3 @@
-// components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
@@ -19,7 +18,7 @@ export function Navbar({ role }: { role: string }) {
     { href: "/", label: "Dashboard" },
     { href: "/users", label: "Users", adminOnly: true },
     { 
-      href: "/about", // Ahora va a la página de redirección
+      href: "/about",
       label: "About Us" 
     },
   ];
@@ -38,7 +37,6 @@ export function Navbar({ role }: { role: string }) {
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 shadow-sm">
       <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-between">
-        {/* Brand */}
         <Link 
           href="/" 
           className="font-semibold text-lg text-gray-800 hover:text-gray-900 transition-colors"
@@ -46,7 +44,6 @@ export function Navbar({ role }: { role: string }) {
           Teams Improve
         </Link>
 
-        {/* Navigation */}
         <nav className="flex items-center gap-1">
           {filteredNavItems.map((item) => (
             <Link
@@ -63,7 +60,6 @@ export function Navbar({ role }: { role: string }) {
           ))}
         </nav>
 
-        {/* Profile */}
         <div className="flex items-center">
           <ProfileButton />
         </div>

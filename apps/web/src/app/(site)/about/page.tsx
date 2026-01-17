@@ -35,10 +35,8 @@ export default async function HomePage() {
   
   return (
     <section className="space-y-8">
-      {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          {/* <ShieldCheck className="w-7 h-7 text-green-600" /> */}
           Welcome {name ? `${name}` : ""}
         </h1>
 
@@ -55,7 +53,6 @@ export default async function HomePage() {
         </p>
       </div>
 
-      {/* Core features */}
       <div>
         <h2 className="text-2xl font-semibold flex items-center gap-2">
           <Rocket className="w-6 h-6 text-blue-600" />
@@ -96,7 +93,6 @@ export default async function HomePage() {
         </ul>
       </div>
 
-      {/* Best practices */}
       <div>
         <h2 className="text-2xl font-semibold flex items-center gap-2">
           <CodeIcon className="w-6 h-6 text-orange-600" />
@@ -145,7 +141,6 @@ export default async function HomePage() {
         </ul>
       </div>
 
-      {/* Database note */}
       <div className="flex items-start gap-3 p-4 border rounded-lg bg-gray-50 sm:flex-row flex-col">
         <Database className="w-6 h-6 text-orange-600 shrink-0" />
         <div className="flex-1 space-y-2">

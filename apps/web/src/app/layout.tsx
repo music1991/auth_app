@@ -5,10 +5,9 @@ import { Toaster } from "sonner";
 export const metadata: Metadata = {
   title: "T Improve",
   description: "",
-  robots: "noindex, nofollow", // Para desarrollo
+  robots: "noindex, nofollow",
 };
 
-// Prevenir cache en el layout
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -16,7 +15,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        {/* Prevenir cache en clientes */}
         <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
@@ -37,18 +35,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           />
         </main>
         
-        {/* Script para prevenir cache del navegador */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Prevenir cache al navegar con back/forward
               window.onpageshow = function(event) {
                 if (event.persisted) {
                   window.location.reload();
                 }
               };
               
-              // Prevenir re-submit de forms
               if (window.history.replaceState) {
                 window.history.replaceState(null, null, window.location.href);
               }

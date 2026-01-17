@@ -23,7 +23,6 @@ export function ClientLogoutButton() {
       });
 
       if (response.ok) {
-        // Forzar recarga completa para limpiar cache del navegador
         window.location.href = "/login";
       } else {
         console.error("Logout failed");
@@ -32,7 +31,6 @@ export function ClientLogoutButton() {
     } catch (error) {
       console.error("Logout error:", error);
       setIsLoading(false);
-      // Fallback: redirigir incluso si hay error
       window.location.href = "/login";
     }
   };

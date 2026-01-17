@@ -1,4 +1,3 @@
-// app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
@@ -7,7 +6,6 @@ import { setSession } from "@/lib/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Headers para prevenir cache
 const NO_CACHE_HEADERS = {
   "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
   "Pragma": "no-cache",
@@ -20,7 +18,6 @@ function clean(v: unknown, max = 256) {
 
 export async function POST(req: Request) {
   try {
-    // Verificar content-type
     const contentType = req.headers.get("content-type");
     if (!contentType?.includes("application/json")) {
       return NextResponse.json(
@@ -32,7 +29,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Parsear body
     const body = await req.json().catch(() => null);
     if (!body) {
       return NextResponse.json(
@@ -44,7 +40,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Validar campos
     const email = clean(body.email, 254).toLowerCase();
     const password = clean(body.password, 128);
 
@@ -58,15 +53,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Buscar usuario
     const user = await db.getUserByEmail(email).catch((e) => {
       console.error("[login] db.getUserByEmail error:", e);
       throw e;
     });
 
-    // Validar usuario existe y tiene password
     if (!user || !user.password_hash) {
-      // Usar el mismo mensaje para no revelar información
       return NextResponse.json(
         { error: "Invalid email or password" }, 
         { 
@@ -76,7 +68,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verificar password
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) {
       return NextResponse.json(
@@ -88,13 +79,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verificar si está verificado
     if (!user.verified) {
       return NextResponse.json(
         { 
           error: "Account is not verified", 
           code: 100,
-          // Opcional: incluir email para reenvío de verificación
           email: user.email 
         }, 
         { 
@@ -104,13 +93,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Determinar rol
     const role = (user.role === "admin" ? "admin" : "user") as "admin" | "user";
 
-    // Crear sesión
     const res = await setSession(user.id, role, user.name!);
 
-    // Agregar headers adicionales de seguridad
     res.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
     res.headers.set("Pragma", "no-cache");
     res.headers.set("Expires", "0");
@@ -128,7 +114,6 @@ export async function POST(req: Request) {
 
     const res = NextResponse.json(payload, { status: 500 });
     
-    // Headers de no-cache también en errores
     res.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
     res.headers.set("Pragma", "no-cache");
     res.headers.set("Expires", "0");
@@ -137,7 +122,6 @@ export async function POST(req: Request) {
   }
 }
 
-// También es buena práctica manejar métodos no permitidos
 export async function GET() {
   return NextResponse.json(
     { error: "Method not allowed" }, 
