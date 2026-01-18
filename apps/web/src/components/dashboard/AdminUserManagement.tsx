@@ -174,7 +174,7 @@ export default function AdminUserManagement() {
                       {selectedUser.role}
                     </span> */}
                     <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(selectedUser.status)}`}>
-                      {isUserOnline(selectedUser.lastSeen) ? "Activo" : "Inactivo"}
+                      {selectedUser.status === "active" ? "Activo" : "Inactivo"}
                     </span>
                   </div>
                 </div>
