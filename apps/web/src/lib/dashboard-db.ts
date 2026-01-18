@@ -550,6 +550,15 @@ async upsertUserPresence(user_id: string): Promise<void> {
       last_seen_at = now(),
       updated_at = now()
   `;
+},
+
+async markUserOffline(user_id: string): Promise<void> {
+  await sql`
+    UPDATE user_presence
+    SET status = 'inactive',
+        updated_at = now()
+    WHERE user_id = ${user_id}
+  `;
 }
 };
 
