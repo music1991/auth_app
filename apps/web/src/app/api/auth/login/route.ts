@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { dashboardDb } from "@/lib/dashboard-db";
 import { setSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -94,6 +95,14 @@ export async function POST(req: Request) {
     }
 
     const role = (user.role === "admin" ? "admin" : "user") as "admin" | "user";
+
+    await dashboardDb.markPresenceLogin(user.id).catch((e) => {
+      console.error("[login] markUserLogin error:", e);
+    });
+
+    await dashboardDb.upsertUserPresence(user.id).catch((e) => {
+      console.error("[login] upsertUserPresence error:", e);
+    });
 
     const res = await setSession(user.id, role, user.name!);
 

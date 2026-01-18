@@ -16,7 +16,7 @@ export function Navbar({ role }: { role: string }) {
 
   const navItems: NavItem[] = [
     { href: "/", label: "Dashboard" },
-    { href: "/users", label: "Users", adminOnly: true },
+    { href: "/users", label: "Accounts", adminOnly: true },
     { 
       href: "/about",
       label: "About Us" 

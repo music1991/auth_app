@@ -52,6 +52,7 @@ export async function GET(req: Request) {
         role: (u.role ?? "user") as "user" | "admin",
         status: (u.status ?? "active") as "active" | "inactive",
         lastLogin: u.last_login ?? null,
+        lastSeen: u.last_seen ?? null,
         verified: !!u.verified,
         createdAt: u.created_at,
 

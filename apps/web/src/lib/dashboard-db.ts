@@ -80,6 +80,7 @@ export type UserWithMetrics = {
   role: "user" | "admin";
   status: string;
   last_login: string | null;
+  last_seen: string | null;
   tasks_assigned: number;
   tasks_completed: number;
   productivity_score: number;
@@ -281,14 +282,14 @@ export const dashboardDb = {
   },
 
   async getAdminStats(): Promise<AdminStats> {
-  const rows = await sql<{
-    total_users: number;
-    active_users: number;
-    pending_tasks: number;
-    completed_tasks: number;
-    pending_evaluations: number;
-    avg_productivity_rate: number;
-  }>`
+    const rows = await sql<{
+      total_users: number;
+      active_users: number;
+      pending_tasks: number;
+      completed_tasks: number;
+      pending_evaluations: number;
+      avg_productivity_rate: number;
+    }>`
     SELECT
       (SELECT COUNT(*) FROM users) as total_users,
 
@@ -310,48 +311,59 @@ export const dashboardDb = {
       ), 0) as avg_productivity_rate
   `;
 
-  const s = rows[0];
+    const s = rows[0];
 
-  return {
-    total_users: s?.total_users ?? 0,
-    active_users: s?.active_users ?? 0,
-    pending_tasks: s?.pending_tasks ?? 0,
-    completed_tasks: s?.completed_tasks ?? 0,
-    pending_evaluations: s?.pending_evaluations ?? 0,
-    productivity_rate: Math.round(s?.avg_productivity_rate ?? 0),
-  };
-},
+    return {
+      total_users: s?.total_users ?? 0,
+      active_users: s?.active_users ?? 0,
+      pending_tasks: s?.pending_tasks ?? 0,
+      completed_tasks: s?.completed_tasks ?? 0,
+      pending_evaluations: s?.pending_evaluations ?? 0,
+      productivity_rate: Math.round(s?.avg_productivity_rate ?? 0),
+    };
+  },
 
   async getUsersWithMetrics(): Promise<UserWithMetrics[]> {
-    const rows = await sql<UserWithMetrics & {
-      last_login: string;
+  const rows = await sql<
+    UserWithMetrics & {
+      last_login: string | null;
+      last_seen: string | null;
       tasks_assigned: number;
       tasks_completed: number;
-      current_productivity_score: number;
-    }>`
-      SELECT 
-        u.id,
-        u.name,
-        u.email,
-        u.role,
-        u.status,
-        u.last_login,
-        COUNT(t.id) as tasks_assigned,
-        COUNT(t.id) FILTER (WHERE t.status = 'completed') as tasks_completed,
-        COALESCE((
-          SELECT productivity_score 
-          FROM productivity_metrics pm 
-          WHERE pm.user_id = u.id AND pm.date = CURRENT_DATE 
-          ORDER BY created_at DESC LIMIT 1
-        ), 0) as productivity_score
-      FROM users u
-      LEFT JOIN tasks t ON t.user_id = u.id
-      WHERE u.role = 'user'
-      GROUP BY u.id, u.name, u.email, u.role, u.status, u.last_login
-      ORDER BY u.created_at DESC
-    `;
-    return rows;
-  },
+      productivity_score: number;
+    }
+  >`
+    SELECT 
+      u.id,
+      u.name,
+      u.email,
+      u.role,
+
+      MAX(up.status)            AS status,
+      MAX(up.last_login_at)     AS last_login,
+      MAX(up.last_seen_at)      AS last_seen,
+
+      COUNT(t.id) AS tasks_assigned,
+      COUNT(t.id) FILTER (WHERE t.status = 'completed') AS tasks_completed,
+
+      COALESCE((
+        SELECT pm.productivity_score 
+        FROM productivity_metrics pm 
+        WHERE pm.user_id = u.id AND pm.date = CURRENT_DATE 
+        ORDER BY pm.created_at DESC
+        LIMIT 1
+      ), 0) AS productivity_score
+
+    FROM users u
+    LEFT JOIN tasks t ON t.user_id = u.id
+    LEFT JOIN user_presence up ON up.user_id = u.id
+    WHERE u.role = 'user'
+    GROUP BY u.id, u.name, u.email, u.role
+    ORDER BY u.created_at DESC
+  `;
+
+  return rows;
+},
 
   async updateUserRole(userId: string, role: "user" | "admin"): Promise<void> {
     await sql`
@@ -514,5 +526,31 @@ export const dashboardDb = {
         productivity_score = EXCLUDED.productivity_score,
         created_at = CURRENT_TIMESTAMP
     `;
-  }
+  },
+
+async markPresenceLogin(user_id: string): Promise<void> {
+  await sql`
+    INSERT INTO user_presence (user_id, status, last_login_at, last_seen_at, updated_at)
+    VALUES (${user_id}, 'active', now(), now(), now())
+    ON CONFLICT (user_id)
+    DO UPDATE SET
+      status = 'active',
+      last_login_at = now(),
+      last_seen_at = now(),
+      updated_at = now()
+  `;
+},
+
+async upsertUserPresence(user_id: string): Promise<void> {
+  await sql`
+    INSERT INTO user_presence (user_id, status, last_seen_at, updated_at)
+    VALUES (${user_id}, 'active', now(), now())
+    ON CONFLICT (user_id)
+    DO UPDATE SET
+      last_seen_at = now(),
+      updated_at = now()
+  `;
+}
 };
+
+

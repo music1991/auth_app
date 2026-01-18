@@ -9,24 +9,16 @@ interface User {
   role: "user" | "admin";
   status: "active" | "inactive";
   lastLogin: string | null;
+  lastSeen: string | null;
   tasksAssigned: number;
   tasksCompleted: number;
 }
 
-type UserDetail = User & {
-  // tasks?: any[];
-  // evaluations?: any[];
-  // workSessions?: any[];
-  // productivity?: any;
-};
-
 export default function AdminUserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserDetail, setSelectedUserDetail] = useState<UserDetail | null>(null);
 
   const [loadingUsers, setLoadingUsers] = useState(true);
-  const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,84 +53,22 @@ export default function AdminUserManagement() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!selectedUserId) {
-      setSelectedUserDetail(null);
-      return;
-    }
-
-    let alive = true;
-
-    (async () => {
-      try {
-        setError(null);
-        setLoadingDetail(true);
-
-        const res = await fetch(`/api/admin/users?id=${encodeURIComponent(selectedUserId)}`, {
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          const body = await res.json().catch(() => null);
-          throw new Error(body?.error ?? "Error cargando detalle");
-        }
-
-        const detail: UserDetail = await res.json();
-        if (!alive) return;
-
-        const fallback = users.find((u) => u.id === selectedUserId);
-        const merged: UserDetail = {
-          ...fallback,
-          ...detail,
-          id: selectedUserId,
-          name: detail.name ?? fallback?.name ?? null,
-          email: detail.email ?? fallback?.email ?? "",
-          role: (detail.role ?? fallback?.role ?? "user") as User["role"],
-          status: (detail.status ?? fallback?.status ?? "active") as User["status"],
-          lastLogin: detail.lastLogin ?? fallback?.lastLogin ?? null,
-          tasksAssigned: detail.tasksAssigned ?? fallback?.tasksAssigned ?? 0,
-          tasksCompleted: detail.tasksCompleted ?? fallback?.tasksCompleted ?? 0,
-        };
-
-        setSelectedUserDetail(merged);
-      } catch (e: any) {
-        if (!alive) return;
-        setError(e?.message ?? "Error");
-        setSelectedUserDetail(null);
-      } finally {
-        if (alive) setLoadingDetail(false);
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, [selectedUserId, users]);
-
-  const selectedUserFromList = useMemo(() => {
+  const selectedUser = useMemo(() => {
     if (!selectedUserId) return null;
     return users.find((u) => u.id === selectedUserId) ?? null;
   }, [users, selectedUserId]);
 
   const updateUserStatus = async (userId: string, newStatus: User["status"]) => {
-    // optimistic list
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)));
-    // optimistic detail
-    setSelectedUserDetail((prev) => (prev?.id === userId ? { ...prev, status: newStatus } : prev));
 
-    // TODO: cuando tenga el endpoint PATCH:
-    // const res = await fetch(`/api/admin/users/${userId}/status`, {
-    //   method: "PATCH",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ status: newStatus }),
-    // });
-    // if (!res.ok) { ...rollback o refetch... }
+    // TODO: cuando tenga endpoint PATCH:
+    // const prevUsers = users;
+    // const res = await fetch(`/api/admin/users/${userId}/status`, {...})
+    // if (!res.ok) rollback/refetch
   };
 
   const updateUserRole = async (userId: string, newRole: User["role"]) => {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-    setSelectedUserDetail((prev) => (prev?.id === userId ? { ...prev, role: newRole } : prev));
-
     // TODO: conectar a PATCH role
   };
 
@@ -159,6 +89,13 @@ export default function AdminUserManagement() {
     return <div className="p-6 text-gray-600">Cargando usuarios...</div>;
   }
 
+  const isUserOnline = (lastSeenAt: string | null) => {
+    if (!lastSeenAt) return false;
+    const last = new Date(lastSeenAt).getTime();
+    const now = Date.now();
+    return now - last <= 12 * 60 * 1000; // 12 minutos
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -175,6 +112,7 @@ export default function AdminUserManagement() {
       ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* LISTA */}
         <div className="space-y-4">
           {users.map((user) => (
             <div
@@ -193,9 +131,9 @@ export default function AdminUserManagement() {
                   <span className={`px-2 py-1 rounded text-xs font-medium ${getRoleColor(user.role)}`}>
                     {user.role}
                   </span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(user.status)}`}>
+                  {/* <span className={`px-2 py-1 rounded text-xs font-medium ${isUserOnline(selectedUser.lastSeen) ? "Activo" : "Inactivo"}`}> 
                     {user.status === "active" ? "Activo" : "Inactivo"}
-                  </span>
+                  </span> */}
                 </div>
               </div>
 
@@ -211,9 +149,7 @@ export default function AdminUserManagement() {
                     <div
                       className="bg-green-500 h-2 rounded-full"
                       style={{
-                        width: `${
-                          user.tasksAssigned > 0 ? (user.tasksCompleted / user.tasksAssigned) * 100 : 0
-                        }%`,
+                        width: `${user.tasksAssigned > 0 ? (user.tasksCompleted / user.tasksAssigned) * 100 : 0}%`,
                       }}
                     />
                   </div>
@@ -229,94 +165,87 @@ export default function AdminUserManagement() {
 
         <div className="bg-gray-50 rounded-lg p-6">
           {selectedUserId ? (
-            loadingDetail ? (
-              <div className="text-gray-600">Cargando detalle...</div>
-            ) : selectedUserDetail || selectedUserFromList ? (
-              (() => {
-                const u = selectedUserDetail ?? selectedUserFromList!;
-                return (
+            selectedUser ? (
+              <div>
+                <div className="flex justify-between items-start mb-6">
+                  <h3 className="text-lg font-semibold">Detalles del Usuario</h3>
+                  <div className="flex gap-2">
+                    {/* <span className={`px-2 py-1 rounded text-xs font-medium ${getRoleColor(selectedUser.role)}`}>
+                      {selectedUser.role}
+                    </span> */}
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(selectedUser.status)}`}>
+                      {isUserOnline(selectedUser.lastSeen) ? "Activo" : "Inactivo"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
                   <div>
-                    <div className="flex justify-between items-start mb-6">
-                      <h3 className="text-lg font-semibold">Detalles del Usuario</h3>
-                      <div className="flex gap-2">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${getRoleColor(u.role)}`}>
-                          {u.role}
-                        </span>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(u.status)}`}>
-                          {u.status === "active" ? "Activo" : "Inactivo"}
-                        </span>
-                      </div>
+                    <label className="block text-sm font-medium text-gray-700">Nombre</label>
+                    <p className="mt-1 text-gray-900">{selectedUser.name ?? "—"}</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <p className="mt-1 text-gray-900">{selectedUser.email}</p>
+                  </div>
+
+                  {/* <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Rol</label>
+                      <select
+                        value={selectedUser.role}
+                        onChange={(e) => updateUserRole(selectedUser.id, e.target.value as User["role"])}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      >
+                        <option value="user">Usuario</option>
+                        <option value="admin">Administrador</option>
+                      </select>
                     </div>
 
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Nombre</label>
-                        <p className="mt-1 text-gray-900">{u.name ?? "—"}</p>
-                      </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Estado</label>
+                      <select
+                        value={selectedUser.status}
+                        onChange={(e) => updateUserStatus(selectedUser.id, e.target.value as User["status"])}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      >
+                        <option value="active">Activo</option>
+                        <option value="inactive">Inactivo</option>
+                      </select>
+                    </div>
+                  </div> */}
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                        <p className="mt-1 text-gray-900">{u.email}</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Rol</label>
-                          <select
-                            value={u.role}
-                            onChange={(e) => updateUserRole(u.id, e.target.value as User["role"])}
-                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                          >
-                            <option value="user">Usuario</option>
-                            <option value="admin">Administrador</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Estado</label>
-                          <select
-                            value={u.status}
-                            onChange={(e) => updateUserStatus(u.id, e.target.value as User["status"])}
-                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                          >
-                            <option value="active">Activo</option>
-                            <option value="inactive">Inactivo</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p>
-                            <strong>Tareas Asignadas:</strong> {u.tasksAssigned}
-                          </p>
-                          <p>
-                            <strong>Completadas:</strong> {u.tasksCompleted}
-                          </p>
-                        </div>
-                        <div>
-                          <p>
-                            <strong>Último Login:</strong>
-                          </p>
-                          <p>{formatDate(u.lastLogin, "datetime")}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 pt-4">
-                        <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
-                          Asignar Tareas
-                        </button>
-                        <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm">
-                          Ver Reporte
-                        </button>
-                        <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm">
-                          Eliminar
-                        </button>
-                      </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p>
+                        <strong>Tareas Asignadas:</strong> {selectedUser.tasksAssigned}
+                      </p>
+                      <p>
+                        <strong>Completadas:</strong> {selectedUser.tasksCompleted}
+                      </p>
+                    </div>
+                    <div>
+                      <p>
+                        <strong>Último Login:</strong>
+                      </p>
+                      <p>{formatDate(selectedUser.lastLogin, "datetime")}</p>
                     </div>
                   </div>
-                );
-              })()
+
+                  <div className="flex gap-2 pt-4">
+                    <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                      Asignar Tareas
+                    </button>
+                    <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm">
+                      Ver Reporte
+                    </button>
+                    <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm">
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="text-gray-600">No se pudo cargar el usuario.</div>
             )
