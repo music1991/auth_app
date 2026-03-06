@@ -77,7 +77,7 @@ export async function setSession(userId: string, role: Role, name: string) {
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set("session", token, COOKIE_OPTS);
-
+  res.cookies.set("id", userId, COOKIE_OPTS);
   res.cookies.set("role", role, COOKIE_OPTS);
   res.cookies.set("name", name, COOKIE_OPTS);
 

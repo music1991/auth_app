@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
+/* interface LoginResponse {
+  success: boolean;
+  error?: string; // Por si falla
+  code?: number;  // Tu código 100 por ejemplo
+} */
+
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });

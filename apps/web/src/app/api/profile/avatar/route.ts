@@ -22,7 +22,7 @@ export async function PUT(req: Request) {
 
     await sql`
       INSERT INTO data_user (user_id, first_name, last_name, avatar_blob, avatar_mime)
-      VALUES (${session.sub}, '', '', ${buf}, ${contentType})
+      VALUES (${session.userId}, '', '', ${buf}, ${contentType})
       ON CONFLICT (user_id) DO UPDATE SET
         avatar_blob = EXCLUDED.avatar_blob,
         avatar_mime = EXCLUDED.avatar_mime,
@@ -47,18 +47,18 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const rows = await sql<{ avatar_blob: Uint8Array | null; avatar_mime: string | null }[]>`
+    const rows = await sql<{ avatar_blob: Uint8Array | null; avatar_mime: string }>`
       SELECT avatar_blob, avatar_mime
       FROM data_user
-      WHERE user_id = ${session.sub}
+      WHERE user_id = ${session.userId}
       LIMIT 1
     `;
     const row = rows[0];
-    if (!row?.avatar_blob) {
+    if (row?.avatar_blob && row.avatar_blob === null ) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const body = Buffer.from(row.avatar_blob);
+    const body = Buffer.from(row.avatar_blob!);
     return new Response(body, {
       status: 200,
       headers: {
@@ -83,7 +83,7 @@ export async function DELETE() {
     await sql`
       UPDATE data_user
       SET avatar_blob = NULL, avatar_mime = NULL, updated_at = now()
-      WHERE user_id = ${session.sub}
+      WHERE user_id = ${session.userId}
     `;
 
     const r = NextResponse.json({ ok: true }, { status: 200 });

@@ -21,8 +21,7 @@ import EditAvatar from "@/components/EditAvatar";
 
 type ApiUser = {
   id: string;
-  username: string | null;
-  last_name: string | null;
+  username: string | null
   email: string;
   role: "user" | "admin";
   verified: boolean;

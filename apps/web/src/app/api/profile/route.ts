@@ -26,7 +26,7 @@ export async function GET() {
         if (!session)
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const result = await db.getUserWithDataById(session.sub);
+        const result = await db.getUserWithDataById(session.userId);
         if (!result)
             return NextResponse.json({ error: "User not found" }, { status: 404 });
 
@@ -34,7 +34,6 @@ export async function GET() {
             user: {
                 id: result.id,
                 username: result.name,
-                last_name: result.last_name,
                 email: result.email,
                 role: result.role,
                 verified: result.verified,
@@ -98,7 +97,7 @@ export async function PATCH(req: Request) {
         }
 
         const saved = await db.upsertDataUser({
-            user_id: session.sub,
+            user_id: session.userId,
             first_name: p.firstName,
             last_name: p.lastName,
             phone: p.phone ?? null,

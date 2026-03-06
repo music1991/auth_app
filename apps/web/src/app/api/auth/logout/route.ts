@@ -8,11 +8,11 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const session = await getSession();
 
-  if (session?.userId) {
+/*   if (session?.userId) {
     await dashboardDb.markUserOffline(session.userId).catch((e) => {
       console.error("[logout] markUserOffline error:", e);
     });
-  }
+  } */
 
   const res = clearSession();
   const redirect = NextResponse.redirect(new URL("/", req.url));

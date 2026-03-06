@@ -96,13 +96,13 @@ export async function POST(req: Request) {
 
     const role = (user.role === "admin" ? "admin" : "user") as "admin" | "user";
 
-    await dashboardDb.markPresenceLogin(user.id).catch((e) => {
+/*     await dashboardDb.markPresenceLogin(user.id).catch((e) => {
       console.error("[login] markUserLogin error:", e);
     });
 
     await dashboardDb.upsertUserPresence(user.id).catch((e) => {
       console.error("[login] upsertUserPresence error:", e);
-    });
+    }); */
 
     const res = await setSession(user.id, role, user.name!);
 

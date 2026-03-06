@@ -27,7 +27,6 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
         user: {
           id: user.id,
           name: user.name ?? null,
-          lastName: user.last_name ?? null,
           email: user.email,
           role: user.role ?? "user",
           verified: !!user.verified,
@@ -48,7 +47,6 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       user: {
         id: updated?.id ?? user.id,
         name: (updated?.name ?? user.name) ?? null,
-        lastName: (updated?.last_name ?? user.last_name) ?? null,
         email: updated?.email ?? user.email,
         role: (updated?.role ?? user.role) ?? "user",
         verified: !!(updated?.verified ?? true),

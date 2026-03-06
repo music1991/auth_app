@@ -19,7 +19,7 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: NO_CACHE_HEADERS });
     }
 
-    await dashboardDb.upsertUserPresence(session.userId);
+   // await dashboardDb.upsertUserPresence(session.userId);
 
     return NextResponse.json({ ok: true }, { headers: NO_CACHE_HEADERS });
   } catch (err: any) {

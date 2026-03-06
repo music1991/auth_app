@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Loader2, UserPlus, CheckCircle2, XCircle, BarChart3, Trash2, Send } from "lucide-react";
+import { toast } from "sonner";
 
 interface User {
   id: string;
   name: string | null;
+  lastName: string | null;
   email: string;
   role: "user" | "admin";
   status: "active" | "inactive";
@@ -12,247 +15,216 @@ interface User {
   lastSeen: string | null;
   tasksAssigned: number;
   tasksCompleted: number;
+  productivityScore: number;
 }
 
 export default function AdminUserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
-  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      // Usamos la ruta de admin que configuramos con métricas
+      const res = await fetch("/api/users?withMetrics=1", { cache: "no-store" });
+      
+      if (!res.ok) throw new Error("No se pudieron cargar los usuarios");
+      
+      const data = await res.json();
+      setUsers(data);
+      if (data.length > 0 && !selectedUserId) setSelectedUserId(data[0].id);
+    } catch (e: any) {
+      setError(e.message);
+      toast.error(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let alive = true;
-
-    (async () => {
-      try {
-        setError(null);
-        setLoadingUsers(true);
-
-        const res = await fetch("/api/users?withMetrics=1", { cache: "no-store" });
-        if (!res.ok) {
-          const body = await res.json().catch(() => null);
-          throw new Error(body?.error ?? "Error cargando usuarios");
-        }
-
-        const data: User[] = await res.json();
-        if (!alive) return;
-
-        setUsers(data);
-        setSelectedUserId((prev) => prev ?? data[0]?.id ?? null);
-      } catch (e: any) {
-        if (!alive) return;
-        setError(e?.message ?? "Error");
-      } finally {
-        if (alive) setLoadingUsers(false);
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
+    loadUsers();
   }, []);
 
-  const selectedUser = useMemo(() => {
-    if (!selectedUserId) return null;
-    return users.find((u) => u.id === selectedUserId) ?? null;
-  }, [users, selectedUserId]);
+  const selectedUser = useMemo(() => 
+    users.find((u) => u.id === selectedUserId) || null
+  , [users, selectedUserId]);
 
-  const updateUserStatus = async (userId: string, newStatus: User["status"]) => {
-    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)));
-
-    // TODO: cuando tenga endpoint PATCH:
-    // const prevUsers = users;
-    // const res = await fetch(`/api/admin/users/${userId}/status`, {...})
-    // if (!res.ok) rollback/refetch
+  const getStatusUI = (status: User["status"]) => {
+    const isActive = status === "active";
+    return {
+      bg: isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600",
+      dot: isActive ? "bg-green-500" : "bg-gray-400",
+      label: isActive ? "En línea" : "Desconectado"
+    };
   };
 
-  const updateUserRole = async (userId: string, newRole: User["role"]) => {
-    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-    // TODO: conectar a PATCH role
-  };
+  const formatDate = (val: string | null) => 
+    val ? new Date(val).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "—";
 
-  const getStatusColor = (status: User["status"]) =>
-    status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
-
-  const getRoleColor = (role: User["role"]) =>
-    role === "admin" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800";
-
-  const formatDate = (value: string | null, mode: "date" | "datetime" = "date") => {
-    if (!value) return "—";
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return "—";
-    return mode === "date" ? d.toLocaleDateString() : d.toLocaleString();
-  };
-
-  if (loadingUsers) {
-    return <div className="p-6 text-gray-600">Cargando usuarios...</div>;
+  if (loading) {
+    return (
+      <div className="flex h-96 flex-col items-center justify-center space-y-4">
+        <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+        <p className="text-gray-500 animate-pulse">Sincronizando panel de control...</p>
+      </div>
+    );
   }
 
-  const isUserOnline = (lastSeenAt: string | null) => {
-    if (!lastSeenAt) return false;
-    const last = new Date(lastSeenAt).getTime();
-    const now = Date.now();
-    return now - last <= 12 * 60 * 1000; // 12 minutos
-  };
-
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Gestión de Usuarios</h2>
-        <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium">
-          + Agregar Usuario
-        </button>
-      </div>
-
-      {error ? (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h2>
+          <p className="text-gray-500 text-sm">Monitorea la actividad y rendimiento de tu equipo.</p>
         </div>
-      ) : null}
+        <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl transition-all shadow-sm">
+          <UserPlus size={18} />
+          <span>Nuevo Usuario</span>
+        </button>
+      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* LISTA */}
-        <div className="space-y-4">
-          {users.map((user) => (
-            <div
-              key={user.id}
-              className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
-                selectedUserId === user.id ? "ring-2 ring-green-500" : ""
-              }`}
-              onClick={() => setSelectedUserId(user.id)}
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="font-semibold">{user.name ?? "—"}</h3>
-                  <p className="text-gray-600 text-sm">{user.email}</p>
-                </div>
-                <div className="flex gap-2">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getRoleColor(user.role)}`}>
-                    {user.role}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* COLUMNA IZQUIERDA: LISTA */}
+        <div className="lg:col-span-1 space-y-3 overflow-y-auto max-h-[700px] pr-2">
+          {users.map((user) => {
+            const ui = getStatusUI(user.status);
+            const progress = user.tasksAssigned > 0 
+              ? Math.round((user.tasksCompleted / user.tasksAssigned) * 100) 
+              : 0;
+
+            return (
+              <div
+                key={user.id}
+                onClick={() => setSelectedUserId(user.id)}
+                className={`group relative border rounded-2xl p-4 cursor-pointer transition-all ${
+                  selectedUserId === user.id 
+                    ? "bg-white border-green-500 shadow-md ring-1 ring-green-500" 
+                    : "bg-white border-gray-200 hover:border-green-300"
+                }`}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-gray-900 truncate">{user.name} {user.lastName}</h3>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  </div>
+                  <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${ui.bg}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${ui.dot}`} />
+                    {ui.label}
                   </span>
-                  {/* <span className={`px-2 py-1 rounded text-xs font-medium ${isUserOnline(selectedUser.lastSeen) ? "Activo" : "Inactivo"}`}> 
-                    {user.status === "active" ? "Activo" : "Inactivo"}
-                  </span> */}
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                <div>
-                  <p>Último login: {formatDate(user.lastLogin, "date")}</p>
-                  <p>
-                    Tareas: {user.tasksCompleted}/{user.tasksAssigned}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="bg-gray-200 rounded-full h-2 mb-1">
-                    <div
-                      className="bg-green-500 h-2 rounded-full"
-                      style={{
-                        width: `${user.tasksAssigned > 0 ? (user.tasksCompleted / user.tasksAssigned) * 100 : 0}%`,
-                      }}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[11px] text-gray-500">
+                    <span>Productividad</span>
+                    <span className="font-medium text-gray-700">{progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${progress > 70 ? 'bg-green-500' : 'bg-amber-500'}`}
+                      style={{ width: `${progress}%` }} 
                     />
                   </div>
-                  <span className="text-xs">
-                    {user.tasksAssigned > 0 ? Math.round((user.tasksCompleted / user.tasksAssigned) * 100) : 0}%
-                    completado
-                  </span>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-6">
-          {selectedUserId ? (
-            selectedUser ? (
-              <div>
-                <div className="flex justify-between items-start mb-6">
-                  <h3 className="text-lg font-semibold">Detalles del Usuario</h3>
-                  <div className="flex gap-2">
-                    {/* <span className={`px-2 py-1 rounded text-xs font-medium ${getRoleColor(selectedUser.role)}`}>
-                      {selectedUser.role}
-                    </span> */}
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(selectedUser.status)}`}>
-                      {selectedUser.status === "active" ? "Activo" : "Inactivo"}
-                    </span>
+        {/* COLUMNA DERECHA: DETALLES */}
+        <div className="lg:col-span-2">
+          {selectedUser ? (
+            <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm sticky top-6">
+              <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 pb-6 border-b border-gray-100">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-white text-2xl font-bold">
+                    {selectedUser.name?.[0]}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">{selectedUser.name} {selectedUser.lastName}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm text-gray-500">{selectedUser.email}</span>
+                      <span className="h-1 w-1 rounded-full bg-gray-300" />
+                      <span className="text-xs font-semibold text-purple-600 uppercase tracking-tighter">{selectedUser.role}</span>
+                    </div>
                   </div>
                 </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nombre</label>
-                    <p className="mt-1 text-gray-900">{selectedUser.name ?? "—"}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <p className="mt-1 text-gray-900">{selectedUser.email}</p>
-                  </div>
-
-                  {/* <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Rol</label>
-                      <select
-                        value={selectedUser.role}
-                        onChange={(e) => updateUserRole(selectedUser.id, e.target.value as User["role"])}
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                      >
-                        <option value="user">Usuario</option>
-                        <option value="admin">Administrador</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Estado</label>
-                      <select
-                        value={selectedUser.status}
-                        onChange={(e) => updateUserStatus(selectedUser.id, e.target.value as User["status"])}
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                      >
-                        <option value="active">Activo</option>
-                        <option value="inactive">Inactivo</option>
-                      </select>
-                    </div>
-                  </div> */}
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p>
-                        <strong>Tareas Asignadas:</strong> {selectedUser.tasksAssigned}
-                      </p>
-                      <p>
-                        <strong>Completadas:</strong> {selectedUser.tasksCompleted}
-                      </p>
-                    </div>
-                    <div>
-                      <p>
-                        <strong>Último Login:</strong>
-                      </p>
-                      <p>{formatDate(selectedUser.lastLogin, "datetime")}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
-                      Asignar Tareas
-                    </button>
-                    <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm">
-                      Ver Reporte
-                    </button>
-                    <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm">
-                      Eliminar
-                    </button>
-                  </div>
+                
+                <div className="flex gap-2 w-full md:w-auto">
+                  <button className="flex-1 md:flex-none p-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+                    <Trash2 size={20} />
+                  </button>
+                  <button className="flex-1 md:flex-none bg-green-600 text-white px-6 py-2 rounded-xl font-medium shadow-sm hover:bg-green-700 transition-all">
+                    Enviar Mensaje
+                  </button>
                 </div>
               </div>
-            ) : (
-              <div className="text-gray-600">No se pudo cargar el usuario.</div>
-            )
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <section className="space-y-6">
+                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Estadísticas de Trabajo</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
+                      <p className="text-blue-600 text-xs font-medium mb-1">Tareas Totales</p>
+                      <p className="text-2xl font-bold text-blue-900">{selectedUser.tasksAssigned}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-green-50 border border-green-100">
+                      <p className="text-green-600 text-xs font-medium mb-1">Completadas</p>
+                      <p className="text-2xl font-bold text-green-900">{selectedUser.tasksCompleted}</p>
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-purple-50 border border-purple-100">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-purple-600 text-xs font-medium">Score de Productividad</p>
+                      <BarChart3 size={16} className="text-purple-400" />
+                    </div>
+                    <p className="text-3xl font-black text-purple-900">{selectedUser.productivityScore}<span className="text-sm font-normal text-purple-500">/100</span></p>
+                  </div>
+                </section>
+
+                <section className="space-y-6">
+                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Actividad Reciente</h4>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-gray-100 text-gray-500">
+                        <CheckCircle2 size={18} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Último Login</p>
+                        <p className="text-xs text-gray-500">{formatDate(selectedUser.lastLogin)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-gray-100 text-gray-500">
+                        <Send size={18} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Visto por última vez</p>
+                        <p className="text-xs text-gray-500">{formatDate(selectedUser.lastSeen)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 space-y-3">
+                     <button className="w-full py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-black transition-all">
+                       Asignar Nueva Tarea
+                     </button>
+                     <button className="w-full py-3 border border-gray-200 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-all">
+                       Descargar Reporte Mensual
+                     </button>
+                  </div>
+                </section>
+              </div>
+            </div>
           ) : (
-            <div className="text-center text-gray-500 py-8">
-              <span className="text-4xl mb-2 block">👥</span>
-              <p>Selecciona un usuario para ver los detalles</p>
+            <div className="h-full min-h-[400px] flex flex-col items-center justify-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 p-12 text-center">
+              <div className="bg-white p-4 rounded-2xl shadow-sm mb-4">
+                 <Loader2 size={32} className="text-gray-300 animate-pulse" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Selecciona un miembro</h3>
+              <p className="text-gray-500 text-sm max-w-xs">Haz clic en un usuario de la lista de la izquierda para ver su rendimiento detallado.</p>
             </div>
           )}
         </div>

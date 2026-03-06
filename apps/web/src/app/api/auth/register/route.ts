@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
     const name = clean(body.name, 128) || null;
-    const last_name = clean(body.lastName, 128) || null;
+    
     const email = clean(body.email, 254).toLowerCase();
     const password = clean(body.password, 128);
 
@@ -50,7 +50,6 @@ export async function POST(req: Request) {
     await db.insertUser({
       id,
       name,
-      last_name,
       email,
       password_hash,
       role,

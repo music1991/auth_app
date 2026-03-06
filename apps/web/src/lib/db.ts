@@ -6,7 +6,6 @@ neonConfig.fetchConnectionCache = true;
 export type DbUser = {
   id: string;
   name: string | null;
-  last_name: string | null;
   email: string;
   password_hash: string;
   role: "user" | "admin";
@@ -45,7 +44,7 @@ export type DbDataUser = {
   postal_code: string | null;
   avatar_url: string | null;
   avatar_blob: Uint8Array | null;
-  avatar_mime: string | null;
+  avatar_mime: string | null; 
   created_at: string;
   updated_at: string;
 };
@@ -81,7 +80,7 @@ export const db = {
   async getUserByEmail(email: string): Promise<DbUser | null> {
     const em = normEmail(email);
     const rows = await sql<DbUser>`
-      SELECT id, name, last_name, email, password_hash, role, verified, created_at
+      SELECT id, name, email, password_hash, role, verified, created_at
       FROM users
       WHERE lower(email) = ${em}
       LIMIT 1
@@ -103,7 +102,6 @@ export const db = {
   async insertUser(u: {
     id: string;
     name: string | null;
-    last_name: string | null;
     email: string;
     password_hash: string;
     role: "user" | "admin";
@@ -114,19 +112,19 @@ export const db = {
     const em = normEmail(u.email);
 
     await sql`
-      INSERT INTO users (id, name, last_name, email, password_hash, role, verified)
-      VALUES (${u.id}, ${u.name}, ${u.last_name}, ${em}, ${u.password_hash}, ${u.role}, false)
+      INSERT INTO users (id, name, email, password_hash, role, verified)
+      VALUES (${u.id}, ${u.name}, ${em}, ${u.password_hash}, ${u.role}, false)
       ON CONFLICT (id) DO NOTHING
     `;
   },
 
   async listUsers(): Promise<
-    Pick<DbUser, "id" | "name" | "last_name" | "email" | "role" | "verified" | "created_at">[]
+    Pick<DbUser, "id" | "name" | "email" | "role" | "verified" | "created_at">[]
   > {
     const rows = await sql<
-      Pick<DbUser, "id" | "name" | "last_name" | "email" | "role" | "verified" | "created_at">
+      Pick<DbUser, "id" | "name" | "email" | "role" | "verified" | "created_at">
     >`
-      SELECT id, name, last_name, email, role, verified, created_at
+      SELECT id, name, email, role, verified, created_at
       FROM users
       ORDER BY created_at DESC
     `;
@@ -386,7 +384,6 @@ async getUserWithDataById(
   const rows = await sql<{
     id: string;
     name: string | null;
-    last_name: string | null;
     email: string;
     password_hash: string;
     role: "user" | "admin";
@@ -412,7 +409,6 @@ async getUserWithDataById(
     SELECT
       u.id,
       u.name,
-      u.last_name,
       u.email,
       u.password_hash,
       u.role,
@@ -445,7 +441,6 @@ async getUserWithDataById(
   const base: DbUser = {
     id: r.id,
     name: r.name,
-    last_name: r.last_name,
     email: r.email,
     password_hash: r.password_hash,
     role: r.role,
@@ -453,8 +448,10 @@ async getUserWithDataById(
     created_at: r.created_at,
   };
 
-  const data: DbDataUser | null = r.data_id
-    ? {
+const encoder = new TextEncoder();
+
+  const data: DbDataUser = 
+    {
         id: r.data_id!,
         user_id: r.user_id!,
         first_name: r.first_name!,
@@ -466,11 +463,13 @@ async getUserWithDataById(
         street: r.street,
         apartment: r.apartment,
         postal_code: r.postal_code,
-        avatar_blob: r.avatar_blob,
+        avatar_blob: r.avatar_blob ? encoder.encode(r.avatar_blob!) : null,
+        avatar_mime: null,
+        avatar_url: null,
         created_at: r.data_created_at!,
         updated_at: r.data_updated_at!,
       }
-    : null;
+;
 
   return { ...base, data };
 },

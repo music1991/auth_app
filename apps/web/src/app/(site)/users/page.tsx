@@ -34,7 +34,7 @@ export default async function Users() {
         </div>
       </div>
 
-      <UsersTable currentUserId={session.sub} />
+      <UsersTable currentUserId={session.userId} />
     </section>
   );
 }
