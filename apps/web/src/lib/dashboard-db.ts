@@ -196,5 +196,42 @@ export const dashboardDb = {
         productivity_score = EXCLUDED.productivity_score,
         created_at = CURRENT_TIMESTAMP
     `;
-  }
+  },
+
+async updateUserAvatar(userId: string, buffer: Buffer, mimeType: string) {
+  const rows = await sql`
+    INSERT INTO data_user (user_id, first_name, last_name, avatar_blob, avatar_mime)
+    VALUES (${userId}, '', '', ${buffer}, ${mimeType}) -- Verifica que mimeType no sea null aquí
+    ON CONFLICT (user_id) DO UPDATE SET
+      avatar_blob = EXCLUDED.avatar_blob,
+      avatar_mime = EXCLUDED.avatar_mime,
+      updated_at  = now()
+  `;
+  return rows[0]; 
+},
+
+   async deleteUserAvatar(userId: string) {
+
+    await sql`
+      UPDATE data_user 
+      SET 
+        avatar_blob = NULL, 
+        avatar_mime = NULL,
+        updated_at = NOW()
+      WHERE user_id = ${userId}
+    `;
+    return { success: true };
+},
+async getUserAvatar(userId: string) {
+  const rows = await sql<{ avatar_blob: Uint8Array | null; avatar_mime: string | null }>`
+    SELECT avatar_blob, avatar_mime 
+    FROM data_user 
+    WHERE user_id = ${userId} 
+    LIMIT 1
+  `;
+  
+  // Si no hay filas, devolvemos null explícitamente
+  return rows.length > 0 ? rows[0] : null;
+}
+
 };

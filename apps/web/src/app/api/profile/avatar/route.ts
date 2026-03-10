@@ -1,74 +1,60 @@
-import "server-only";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { sql } from "@/lib/db";
+import { dashboardDb } from "@/lib/dashboard-db";
 
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const session = await getSession();
+    const targetId = searchParams.get("u") || session?.userId;
+
+    if (!targetId) return new Response("Unauthorized", { status: 401 });
+
+    const row = await dashboardDb.getUserAvatar(targetId);
+
+    // Si la fila no existe o el blob es nulo en la DB
+    if (!row || !row.avatar_blob) {
+      return new Response(null, { status: 404 });
+    }
+
+    // Convertimos los bytes de Neon a un Buffer binario
+    const body = Buffer.from(row.avatar_blob);
+
+    return new Response(body, {
+      status: 200,
+      headers: {
+        // Usamos el MIME guardado que ya vimos que en Neon está bien (image/jpeg)
+        "Content-Type": row.avatar_mime || "image/jpeg",
+        "Content-Length": String(body.length),
+        "Cache-Control": "no-store, must-revalidate",
+      },
+    });
+  } catch (err) {
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
+}
+
+
+
 
 export async function PUT(req: Request) {
   try {
     const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    // Capturamos el MIME real que viene del Hook/Service
+    const contentType = req.headers.get("content-type") || "image/jpeg";
+    const buffer = Buffer.from(await req.arrayBuffer());
+
+    if (buffer.length > 2 * 1024 * 1024) {
+      return NextResponse.json({ error: "File too large" }, { status: 413 });
     }
 
-    const contentType = req.headers.get("content-type") || "application/octet-stream";
-
-    const buf = Buffer.from(await req.arrayBuffer());
-    if (buf.length > 2 * 1024 * 1024) {
-      return NextResponse.json({ error: "File too large (max 2MB)" }, { status: 413 });
-    }
-
-    await sql`
-      INSERT INTO data_user (user_id, first_name, last_name, avatar_blob, avatar_mime)
-      VALUES (${session.userId}, '', '', ${buf}, ${contentType})
-      ON CONFLICT (user_id) DO UPDATE SET
-        avatar_blob = EXCLUDED.avatar_blob,
-        avatar_mime = EXCLUDED.avatar_mime,
-        updated_at  = now()
-    `;
-
-    const res = NextResponse.json({ ok: true }, { status: 200 });
-    res.headers.set("Cache-Control", "no-store");
-    return res;
+    await dashboardDb.updateUserAvatar(session.userId, buffer, contentType);
+    return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("PUT /api/profile/avatar failed:", err);
-    const r = NextResponse.json({ error: "Internal error" }, { status: 500 });
-    r.headers.set("Cache-Control", "no-store");
-    return r;
-  }
-}
-
-export async function GET() {
-  try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const rows = await sql<{ avatar_blob: Uint8Array | null; avatar_mime: string }>`
-      SELECT avatar_blob, avatar_mime
-      FROM data_user
-      WHERE user_id = ${session.userId}
-      LIMIT 1
-    `;
-    const row = rows[0];
-    if (row?.avatar_blob && row.avatar_blob === null ) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-
-    const body = Buffer.from(row.avatar_blob!);
-    return new Response(body, {
-      status: 200,
-      headers: {
-        "Content-Type": row.avatar_mime || "application/octet-stream",
-        "Content-Length": String(body.length),
-        "Cache-Control": "no-store",
-      },
-    });
-  } catch (err) {
-    console.error("GET /api/profile/avatar failed:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -76,21 +62,11 @@ export async function GET() {
 export async function DELETE() {
   try {
     const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    await sql`
-      UPDATE data_user
-      SET avatar_blob = NULL, avatar_mime = NULL, updated_at = now()
-      WHERE user_id = ${session.userId}
-    `;
-
-    const r = NextResponse.json({ ok: true }, { status: 200 });
-    r.headers.set("Cache-Control", "no-store");
-    return r;
+    await dashboardDb.deleteUserAvatar(session.userId);
+    return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("DELETE /api/profile/avatar failed:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

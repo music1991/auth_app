@@ -58,6 +58,7 @@ export default function ProfilePage() {
 
   const loadAvatarBlob = async (userId: string) => {
     try {
+      console.log('llega por aqui')
       const res = await fetch(`/api/profile/avatar?u=${userId}`);
       if (res.ok) {
         const blob = await res.blob();
@@ -136,6 +137,13 @@ export default function ProfilePage() {
     setIsEditing(false);
     setFormSeed((k) => k + 1);
   }
+
+  useEffect(() => {
+  if (user?.id) {
+    console.log("Iniciando carga de avatar para:", user.id);
+    loadAvatarBlob(user.id);
+  }
+}, [user?.id]);
 
   const handleAvatarUpdate = async () => {
     if (user?.id) {
