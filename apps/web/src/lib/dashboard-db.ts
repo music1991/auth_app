@@ -505,4 +505,242 @@ async updateUserTask(
   `;
 },
 
+// ==========================================
+// SECTION: EVALUATIONS
+// ==========================================
+
+async getEvaluationTemplatesWithStats() {
+  const rows = await sql<{
+    id: string;
+    title: string;
+    description: string;
+    type: "environment" | "performance" | "skills";
+    status: "draft" | "active" | "completed";
+    due_date: string | null;
+    created_at: string;
+    assigned_users: number;
+    responses_count: number;
+  }>`
+    SELECT
+      et.id,
+      et.title,
+      et.description,
+      et.type,
+      et.status,
+      et.due_date,
+      et.created_at,
+      COUNT(e.id)::int as assigned_users,
+      COUNT(e.id) FILTER (WHERE e.completed_date IS NOT NULL)::int as responses_count
+    FROM evaluation_templates et
+    LEFT JOIN evaluations e ON e.template_id = et.id
+    GROUP BY
+      et.id,
+      et.title,
+      et.description,
+      et.type,
+      et.status,
+      et.due_date,
+      et.created_at
+    ORDER BY et.created_at DESC
+  `;
+
+  return rows.map((row) => {
+    const assignedUsers = Number(row.assigned_users ?? 0);
+    const responses = Number(row.responses_count ?? 0);
+
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      type: row.type,
+      status: row.status,
+      createdDate: row.created_at,
+      dueDate: row.due_date,
+      assignedUsers,
+      responses,
+      completionRate:
+        assignedUsers > 0 ? Math.round((responses / assignedUsers) * 100) : 0,
+    };
+  });
+},
+
+async createEvaluationTemplate(template: {
+  title: string;
+  description: string;
+  type: string;
+  dueDate?: string | null;
+  createdBy: string;
+}) {
+  const rows = await sql<{ id: string }>`
+    INSERT INTO evaluation_templates (
+      title,
+      description,
+      type,
+      status,
+      created_by,
+      due_date
+    )
+    VALUES (
+      ${template.title},
+      ${template.description},
+      ${template.type},
+      'draft',
+      ${template.createdBy},
+      ${template.dueDate ?? null}
+    )
+    RETURNING id
+  `;
+
+  return rows[0].id;
+},
+
+async publishEvaluationTemplate(templateId: string) {
+  await sql`
+    UPDATE evaluation_templates
+    SET
+      status = 'active',
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${templateId}
+  `;
+},
+
+async getUserEvaluations(userId: string) {
+  const rows = await sql<{
+    id: string;
+    template_id: string;
+    user_id: string;
+    assigned_by: string;
+    status: string;
+    assigned_date: string;
+    due_date: string | null;
+    completed_date: string | null;
+    score: number | null;
+    max_score: number | null;
+    responses: any;
+    title: string;
+    description: string;
+    type: string;
+  }>`
+    SELECT
+      e.id,
+      e.template_id,
+      e.user_id,
+      e.assigned_by,
+      e.status,
+      e.assigned_date,
+      e.due_date,
+      e.completed_date,
+      e.score,
+      e.max_score,
+      e.responses,
+      et.title,
+      et.description,
+      et.type
+    FROM evaluations e
+    INNER JOIN evaluation_templates et ON et.id = e.template_id
+    WHERE e.user_id = ${userId}
+    ORDER BY
+      CASE e.status
+        WHEN 'in_progress' THEN 1
+        WHEN 'pending' THEN 2
+        WHEN 'completed' THEN 3
+        ELSE 4
+      END,
+      e.due_date ASC,
+      e.created_at DESC
+  `;
+
+  return rows.map((row) => ({
+    id: row.id,
+    templateId: row.template_id,
+    title: row.title,
+    description: row.description,
+    type: row.type,
+    status: row.status,
+    assignedDate: row.assigned_date,
+    dueDate: row.due_date,
+    completedDate: row.completed_date,
+    score: row.score ?? 0,
+    maxScore: row.max_score ?? 0,
+    responses: row.responses,
+  }));
+},
+
+async startEvaluation(evaluationId: string, userId: string) {
+  await sql`
+    UPDATE evaluations
+    SET
+      status = 'in-progress',
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${evaluationId}
+      AND user_id = ${userId}
+  `;
+},
+
+async submitEvaluation(data: {
+  evaluationId: string;
+  userId: string;
+  responses: any;
+  score: number;
+  maxScore: number;
+}) {
+  await sql`
+    UPDATE evaluations
+    SET
+      status = 'completed',
+      responses = ${JSON.stringify(data.responses ?? {})},
+      score = ${data.score},
+      max_score = ${data.maxScore},
+      completed_date = CURRENT_TIMESTAMP,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${data.evaluationId}
+      AND user_id = ${data.userId}
+  `;
+},
+async assignEvaluationTemplateToUsers(data: {
+  templateId: string;
+  userIds: string[];
+  assignedBy: string;
+  dueDate?: string | null;
+}) {
+  if (!data.userIds.length) return;
+
+  for (const userId of data.userIds) {
+    const existing = await sql<{ id: string }>`
+      SELECT id
+      FROM evaluations
+      WHERE template_id = ${data.templateId}
+        AND user_id = ${userId}
+        AND status IN ('pending', 'in_progress')
+      LIMIT 1
+    `;
+
+    if (existing.length > 0) continue;
+
+    await sql`
+      INSERT INTO evaluations (
+        template_id,
+        user_id,
+        assigned_by,
+        status,
+        assigned_date,
+        due_date,
+        score,
+        max_score,
+        responses
+      )
+      VALUES (
+        ${data.templateId},
+        ${userId},
+        ${data.assignedBy},
+        'pending',
+        CURRENT_TIMESTAMP,
+        ${data.dueDate ?? null},
+        0,
+        0,
+        ${JSON.stringify({})}
+      )
+    `;
+  }
+}
 };

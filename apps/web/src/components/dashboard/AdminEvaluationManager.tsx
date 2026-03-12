@@ -1,256 +1,300 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-interface Evaluation {
+type EvaluationType = "environment" | "performance" | "skills";
+type EvaluationStatus = "draft" | "active" | "completed";
+
+interface EvaluationTemplateItem {
   id: string;
   title: string;
-  type: "environment" | "performance" | "skills";
-  status: "draft" | "active" | "completed";
-  assignedTo: string[];
+  description: string;
+  type: EvaluationType;
+  status: EvaluationStatus;
   createdDate: string;
-  dueDate: string;
+  dueDate: string | null;
+  assignedUsers: number;
   responses: number;
-  totalUsers: number;
+  completionRate: number;
+}
+
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "user" | "admin";
+  status: "active" | "inactive";
+  verified: boolean;
 }
 
 export default function AdminEvaluationManager() {
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([
-    {
-      id: "1",
-      title: "Evaluación de Ambiente Laboral Q1 2024",
-      type: "environment",
-      status: "active",
-      assignedTo: ["user1", "user2", "user3", "user4"],
-      createdDate: "2024-01-15",
-      dueDate: "2024-02-15",
-      responses: 2,
-      totalUsers: 4,
-    },
-    {
-      id: "2",
-      title: "Evaluación de Habilidades Técnicas",
-      type: "skills",
-      status: "completed",
-      assignedTo: ["user1", "user2", "user3"],
-      createdDate: "2024-01-10",
-      dueDate: "2024-01-20",
-      responses: 3,
-      totalUsers: 3,
-    },
-    {
-      id: "3",
-      title: "Evaluación de Desempeño Anual",
-      type: "performance",
-      status: "draft",
-      assignedTo: [],
-      createdDate: "2024-01-18",
-      dueDate: "2024-02-28",
-      responses: 0,
-      totalUsers: 0,
-    },
-  ]);
-
+  // 1. ESTADOS (Todos en la raíz del componente)
+  const [evaluations, setEvaluations] = useState<EvaluationTemplateItem[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  
+  const [selectedEvaluationId, setSelectedEvaluationId] = useState<string | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [assignDueDate, setAssignDueDate] = useState("");
+
   const [newEvaluation, setNewEvaluation] = useState({
     title: "",
-    type: "environment" as const,
+    description: "",
+    type: "environment" as EvaluationType,
     dueDate: "",
   });
 
-  const createEvaluation = () => {
-    const evaluation: Evaluation = {
-      id: Date.now().toString(),
-      title: newEvaluation.title,
-      type: newEvaluation.type,
-      status: "draft",
-      assignedTo: [],
-      createdDate: new Date().toISOString().split('T')[0],
-      dueDate: newEvaluation.dueDate,
-      responses: 0,
-      totalUsers: 0,
-    };
+  // 2. EFECTOS
+  useEffect(() => {
+    loadEvaluations();
+  }, []);
 
-    setEvaluations(prev => [evaluation, ...prev]);
-    setShowCreateForm(false);
-    setNewEvaluation({ title: "", type: "environment", dueDate: "" });
-  };
-
-  const getStatusColor = (status: Evaluation["status"]) => {
-    switch (status) {
-      case "draft": return "bg-gray-100 text-gray-800";
-      case "active": return "bg-green-100 text-green-800";
-      case "completed": return "bg-blue-100 text-blue-800";
-      default: return "bg-gray-100 text-gray-800";
+  // 3. FUNCIONES DE CARGA
+  const loadEvaluations = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/dashboard/admin/evaluations", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Error cargando evaluaciones");
+      setEvaluations(data.evaluations || []);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getTypeColor = (type: Evaluation["type"]) => {
-    switch (type) {
-      case "environment": return "bg-purple-100 text-purple-800";
-      case "performance": return "bg-blue-100 text-blue-800";
-      case "skills": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+  const loadUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const response = await fetch("/api/dashboard/admin/users", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Error cargando usuarios");
+      const onlyUsers = Array.isArray(data) ? data.filter((u) => u.role === "user") : [];
+      setUsers(onlyUsers);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Error");
+    } finally {
+      setUsersLoading(false);
     }
   };
 
-  const publishEvaluation = (evaluationId: string) => {
-    setEvaluations(evaluations.map(evalItem =>
-      evalItem.id === evaluationId ? { ...evalItem, status: "active" } : evalItem
-    ));
+  // 4. HANDLERS
+  const openAssignModal = async (evaluationId: string, dueDate?: string | null) => {
+    setSelectedEvaluationId(evaluationId);
+    setSelectedUserIds([]);
+    setAssignDueDate(dueDate || "");
+    setShowAssignModal(true);
+    await loadUsers(); // Cargamos usuarios al abrir el modal
   };
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const createEvaluation = async () => {
+    try {
+      setSubmitting(true);
+      const response = await fetch("/api/dashboard/admin/evaluations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create-template",
+          data: { ...newEvaluation, dueDate: newEvaluation.dueDate || null },
+        }),
+      });
+      if (!response.ok) throw new Error("Error al crear");
+      setShowCreateForm(false);
+      setNewEvaluation({ title: "", description: "", type: "environment", dueDate: "" });
+      await loadEvaluations();
+    } catch (error) {
+      alert("Error al crear la evaluación");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const assignEvaluation = async () => {
+    if (!selectedEvaluationId || selectedUserIds.length === 0) return;
+    try {
+      setSubmitting(true);
+      const response = await fetch("/api/dashboard/admin/evaluations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "assign-template",
+          data: { templateId: selectedEvaluationId, userIds: selectedUserIds, dueDate: assignDueDate || null },
+        }),
+      });
+      if (!response.ok) throw new Error("Error al asignar");
+      setShowAssignModal(false);
+      await loadEvaluations();
+    } catch (error) {
+      alert("Error al asignar");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const publishEvaluation = async (id: string) => {
+    try {
+      setSubmitting(true);
+      await fetch("/api/dashboard/admin/evaluations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "publish-template", data: { templateId: id } }),
+      });
+      await loadEvaluations();
+    } catch (error) {
+      alert("Error al publicar");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Helpers de Estilo
+  const getStatusColor = (status: EvaluationStatus) => {
+    const colors = { draft: "bg-gray-100 text-gray-800", active: "bg-green-100 text-green-800", completed: "bg-blue-100 text-blue-800" };
+    return colors[status] || colors.draft;
+  };
+
+  const getTypeColor = (type: EvaluationType) => {
+    const colors = { environment: "bg-purple-100 text-purple-800", performance: "bg-blue-100 text-blue-800", skills: "bg-green-100 text-green-800" };
+    return colors[type] || colors.environment;
+  };
+
+  if (loading) return <div className="p-6 text-center">Cargando evaluaciones...</div>;
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Gestión de Evaluaciones</h2>
-        <button 
-          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium"
-          onClick={() => setShowCreateForm(true)}
-        >
-          + Nueva Evaluación
-        </button>
-      </div>
+    <>
+      <div className="p-6">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Gestión de Evaluaciones</h2>
+          <button
+            className="rounded-lg bg-green-500 px-4 py-2 font-medium text-white hover:bg-green-600"
+            onClick={() => setShowCreateForm(true)}
+          >
+            + Nueva Evaluación
+          </button>
+        </div>
 
-      {showCreateForm && (
-        <div className="bg-white border rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Crear Nueva Evaluación</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Título de la Evaluación
-              </label>
+        {/* FORMULARIO DE CREACIÓN */}
+        {showCreateForm && (
+          <div className="mb-6 rounded-lg border bg-white p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-semibold">Crear Nueva Evaluación</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <input
                 type="text"
+                placeholder="Título"
+                className="rounded-md border p-2"
                 value={newEvaluation.title}
-                onChange={(e) => setNewEvaluation({...newEvaluation, title: e.target.value})}
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-                placeholder="Ej: Evaluación de Ambiente Laboral Q1 2024"
+                onChange={(e) => setNewEvaluation({ ...newEvaluation, title: e.target.value })}
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Evaluación
-              </label>
               <select
+                className="rounded-md border p-2"
                 value={newEvaluation.type}
-                onChange={(e) => setNewEvaluation({...newEvaluation, type: e.target.value as any})}
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                onChange={(e) => setNewEvaluation({ ...newEvaluation, type: e.target.value as EvaluationType })}
               >
                 <option value="environment">Ambiente Laboral</option>
                 <option value="performance">Desempeño</option>
                 <option value="skills">Habilidades</option>
               </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha Límite
-              </label>
+              <textarea
+                placeholder="Descripción"
+                className="md:col-span-2 rounded-md border p-2 h-20"
+                value={newEvaluation.description}
+                onChange={(e) => setNewEvaluation({ ...newEvaluation, description: e.target.value })}
+              />
               <input
                 type="date"
+                className="rounded-md border p-2"
                 value={newEvaluation.dueDate}
-                onChange={(e) => setNewEvaluation({...newEvaluation, dueDate: e.target.value})}
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setNewEvaluation({ ...newEvaluation, dueDate: e.target.value })}
               />
-            </div>
-
-            <div className="flex items-end">
-              <div className="flex gap-2">
-                <button
-                  onClick={createEvaluation}
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-medium"
-                >
-                  Crear Evaluación
+              <div className="flex gap-2 items-end">
+                <button onClick={createEvaluation} disabled={submitting} className="bg-green-500 text-white px-4 py-2 rounded">
+                  {submitting ? "Creando..." : "Guardar"}
                 </button>
-                <button
-                  onClick={() => setShowCreateForm(false)}
-                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium"
-                >
+                <button onClick={() => setShowCreateForm(false)} className="bg-gray-400 text-white px-4 py-2 rounded">
                   Cancelar
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {evaluations.map((evaluation) => (
-          <div key={evaluation.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-3">
-              <span className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(evaluation.type)}`}>
-                {evaluation.type === "environment" && "Ambiente"}
-                {evaluation.type === "performance" && "Desempeño"}
-                {evaluation.type === "skills" && "Habilidades"}
-              </span>
-              <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(evaluation.status)}`}>
-                {evaluation.status === "draft" && "Borrador"}
-                {evaluation.status === "active" && "Activa"}
-                {evaluation.status === "completed" && "Completada"}
-              </span>
-            </div>
-
-            <h3 className="font-semibold mb-2">{evaluation.title}</h3>
-            
-            <div className="space-y-2 text-sm text-gray-600 mb-4">
-              <p>Creada: {new Date(evaluation.createdDate).toLocaleDateString()}</p>
-              <p>Vence: {new Date(evaluation.dueDate).toLocaleDateString()}</p>
-              <p>Asignada a: {evaluation.assignedTo.length} usuarios</p>
-              <p>Respuestas: {evaluation.responses}/{evaluation.totalUsers}</p>
-            </div>
-
-            {evaluation.totalUsers > 0 && (
-              <div className="mb-4">
-                <div className="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>Progreso de respuestas</span>
-                  <span>{Math.round((evaluation.responses / evaluation.totalUsers) * 100)}%</span>
-                </div>
-                <div className="bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(evaluation.responses / evaluation.totalUsers) * 100}%` }}
-                  ></div>
-                </div>
+        {/* LISTADO DE EVALUACIONES */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {evaluations.map((ev) => (
+            <div key={ev.id} className="rounded-lg border p-4 hover:shadow-md transition-shadow">
+              <div className="flex justify-between mb-2">
+                <span className={`px-2 py-1 text-xs rounded ${getTypeColor(ev.type)}`}>{ev.type}</span>
+                <span className={`px-2 py-1 text-xs rounded ${getStatusColor(ev.status)}`}>{ev.status}</span>
               </div>
-            )}
-
-            <div className="flex gap-2">
-              {evaluation.status === "draft" && (
-                <button
-                  onClick={() => publishEvaluation(evaluation.id)}
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded text-sm font-medium"
-                >
-                  Publicar
-                </button>
-              )}
-              {evaluation.status === "active" && (
-                <button className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded text-sm font-medium">
-                  Ver Resultados
-                </button>
-              )}
-              <button className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded text-sm">
-                Editar
-              </button>
+              <h3 className="font-bold mb-2">{ev.title}</h3>
+              <div className="text-sm text-gray-500 mb-4">
+                <p>Usuarios: {ev.assignedUsers}</p>
+                <p>Progreso: {ev.completionRate}%</p>
+              </div>
+              <div className="flex gap-2">
+                {ev.status === "draft" && (
+                  <button onClick={() => publishEvaluation(ev.id)} className="flex-1 bg-green-500 text-white text-xs py-2 rounded">Publicar</button>
+                )}
+                <button onClick={() => openAssignModal(ev.id, ev.dueDate)} className="flex-1 bg-blue-500 text-white text-xs py-2 rounded">Asignar</button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {evaluations.length === 0 && (
-        <div className="text-center text-gray-500 py-8">
-          <span className="text-4xl mb-2 block">📊</span>
-          <p>No hay evaluaciones creadas</p>
-          <button 
-            className="mt-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium"
-            onClick={() => setShowCreateForm(true)}
-          >
-            Crear Primera Evaluación
-          </button>
+      {/* MODAL DE ASIGNACIÓN */}
+      {showAssignModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b px-6 py-4">
+              <h3 className="text-lg font-semibold">Asignar Evaluación</h3>
+              <button onClick={() => setShowAssignModal(false)}>✕</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <input
+                type="date"
+                value={assignDueDate}
+                onChange={(e) => setAssignDueDate(e.target.value)}
+                className="w-full border p-2 rounded"
+              />
+              <div className="max-h-60 overflow-y-auto border rounded-lg p-2">
+                {usersLoading ? <p>Cargando usuarios...</p> : users.map(user => (
+                  <label key={user.id} className="flex justify-between p-2 hover:bg-gray-50 border-b last:border-0 cursor-pointer">
+                    <span>{user.name} ({user.email})</span>
+                    <input
+                      type="checkbox"
+                      checked={selectedUserIds.includes(user.id)}
+                      onChange={() => toggleUserSelection(user.id)}
+                    />
+                  </label>
+                ))}
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <button onClick={() => setShowAssignModal(false)} className="bg-gray-200 px-4 py-2 rounded">Cancelar</button>
+                <button 
+                  onClick={assignEvaluation} 
+                  disabled={submitting || selectedUserIds.length === 0} 
+                  className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50"
+                >
+                  {submitting ? "Asignando..." : "Confirmar Asignación"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
