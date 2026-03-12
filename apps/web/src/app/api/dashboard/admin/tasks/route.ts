@@ -5,14 +5,19 @@ import { dashboardDb } from "@/lib/dashboard-db";
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session || session.role !== 'admin') {
+
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const taskTemplates = await dashboardDb.getTaskTemplates();
-    return NextResponse.json({ taskTemplates });
+    // Cada usuario obtiene sus tareas asignadas
+    const tasks = await dashboardDb.getAssignedTasksForAdmin(); //getUserTasks ??
+
+    return NextResponse.json({ tasks });
+
   } catch (error) {
-    console.error("Error fetching task templates:", error);
+    console.error("Error fetching tasks:", error);
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -23,39 +28,62 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session || session.role !== 'admin') {
+
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
     const { action, data } = body;
 
-    if (action === 'create-template') {
-      const templateId = await dashboardDb.createTaskTemplate({
-        title: data.title,
-        description: data.description,
-        type: data.type,
-        estimatedHours: data.estimatedHours,
-        requirements: data.requirements,
-        createdBy: session.sub
-      });
-      return NextResponse.json({ templateId, success: true });
-    } else if (action === 'assign-task') {
+    // ======================================
+    // ASSIGN TASK (ADMIN)
+    // ======================================
+    if (action === "assign-task") {
+
+      if (session.role !== "admin") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
       const taskId = await dashboardDb.assignTask({
         templateId: data.templateId,
         userId: data.userId,
-        assignedBy: session.sub,
+        assignedBy: session.userId,
         title: data.title,
         description: data.description,
         dueDate: data.dueDate,
         details: data.details
       });
-      return NextResponse.json({ taskId, success: true });
-    } else {
-      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+
+      return NextResponse.json({
+        success: true,
+        taskId
+      });
     }
+
+    // ======================================
+    // UPDATE TASK STATUS
+    // ======================================
+    if (action === "update-task-status") {
+
+      await dashboardDb.updateTaskStatus(
+        data.taskId,
+        data.status
+      );
+
+      return NextResponse.json({
+        success: true
+      });
+    }
+
+    return NextResponse.json(
+      { error: "Invalid action" },
+      { status: 400 }
+    );
+
   } catch (error) {
-    console.error("Error in admin task action:", error);
+    console.error("Error in tasks route:", error);
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

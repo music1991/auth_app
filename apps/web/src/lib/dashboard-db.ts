@@ -177,14 +177,14 @@ export const dashboardDb = {
   // SECTION: TEMPLATES & ASSIGNMENTS
   // ==========================================
 
-  async assignTask(task: any) {
+/*   async assignTask(task: any) {
     const rows = await sql<{ id: string }>`
       INSERT INTO tasks (template_id, user_id, assigned_by, title, description, due_date, details)
       VALUES (${task.templateId}, ${task.userId}, ${task.assignedBy}, ${task.title}, ${task.description}, ${task.dueDate}, ${task.details})
       RETURNING id
     `;
     return rows[0].id;
-  },
+  }, */
 
   async updateProductivityMetric(metric: any) {
     await sql`
@@ -232,6 +232,277 @@ async getUserAvatar(userId: string) {
   
   // Si no hay filas, devolvemos null explícitamente
   return rows.length > 0 ? rows[0] : null;
-}
+},
+
+  // ==========================================
+  // SECTION: TEMPLATES & ASSIGNMENTS
+  // ==========================================
+
+  async getTaskTemplates() {
+    const rows = await sql<{
+      id: string;
+      title: string;
+      description: string;
+      type: string;
+      estimated_hours: number;
+      requirements: string[] | null;
+      created_by: string;
+      created_at: string;
+      updated_at: string;
+    }>`
+      SELECT
+        id,
+        title,
+        description,
+        type,
+        estimated_hours,
+        requirements,
+        created_by,
+        created_at,
+        updated_at
+      FROM task_templates
+      ORDER BY created_at DESC
+    `;
+
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      type: row.type,
+      estimatedHours: row.estimated_hours,
+      requirements: row.requirements ?? [],
+      createdBy: row.created_by,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  },
+
+  async createTaskTemplate(template: {
+    title: string;
+    description: string;
+    type: string;
+    estimatedHours: number;
+    requirements: string[];
+    createdBy: string;
+  }) {
+    const rows = await sql<{ id: string }>`
+      INSERT INTO task_templates (
+        title,
+        description,
+        type,
+        estimated_hours,
+        requirements,
+        created_by
+      )
+     VALUES (
+      ${template.title},
+      ${template.description},
+      ${template.type},
+      ${template.estimatedHours},
+      ${JSON.stringify(template.requirements)},
+      ${template.createdBy}
+    )
+      RETURNING id
+    `;
+
+    return rows[0].id;
+  },
+
+  async updateTaskTemplate(
+    templateId: string,
+    template: {
+      title: string;
+      description: string;
+      type: string;
+      estimatedHours: number;
+      requirements: string[];
+    }
+  ) {
+    await sql`
+      UPDATE task_templates
+      SET
+        title = ${template.title},
+        description = ${template.description},
+        type = ${template.type},
+        estimated_hours = ${template.estimatedHours},
+        requirements = ${template.requirements},
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${templateId}
+    `;
+  },
+
+  async deleteTaskTemplate(templateId: string) {
+    await sql`
+      DELETE FROM task_templates
+      WHERE id = ${templateId}
+    `;
+  },
+
+ async assignTask(task: {
+  templateId: string;
+  userId: string;
+  assignedBy: string;
+  title: string;
+  description: string;
+  dueDate: string;
+  details?: any;
+}) {
+  const rows = await sql<{ id: string }>`
+    INSERT INTO tasks (
+      template_id,
+      user_id,
+      assigned_by,
+      title,
+      description,
+      status,
+      progress,
+      assigned_date,
+      due_date,
+      details
+    )
+    VALUES (
+      ${task.templateId},
+      ${task.userId},
+      ${task.assignedBy},
+      ${task.title},
+      ${task.description},
+      'pending',
+      0,
+      CURRENT_TIMESTAMP,
+      ${task.dueDate},
+      ${JSON.stringify(task.details ?? {})}
+    )
+    RETURNING id
+  `;
+
+  return rows[0].id;
+},
+
+async getAssignedTasksForAdmin() {
+  const rows = await sql<{
+    id: string;
+    template_id: string;
+    user_id: string;
+    user_name: string;
+    assigned_date: string;
+    due_date: string;
+    status: "pending" | "in-progress" | "completed";
+    progress: number;
+    details: string | null;
+  }>`
+    SELECT
+      t.id,
+      t.template_id,
+      t.user_id,
+      u.name as user_name,
+      t.assigned_date,
+      t.due_date,
+      t.status,
+      COALESCE(t.progress, 0) as progress,
+      t.details
+    FROM tasks t
+    LEFT JOIN users u ON u.id = t.user_id
+    ORDER BY u.name ASC, t.assigned_date DESC, t.created_at DESC
+  `;
+
+  return rows.map((row) => {
+    let parsedDetails: any = {};
+
+    if (row.details) {
+      try {
+        parsedDetails =
+          typeof row.details === "string" ? JSON.parse(row.details) : row.details;
+      } catch {
+        parsedDetails = {};
+      }
+    }
+
+    return {
+      id: row.id,
+      templateId: row.template_id,
+      userId: row.user_id,
+      userName: row.user_name ?? "Usuario",
+      assignedDate: row.assigned_date,
+      dueDate: row.due_date,
+      status: row.status,
+      progress: Number(row.progress ?? 0),
+      instructions: parsedDetails.instructions ?? "",
+    };
+  });
+},
+
+async getTaskById(taskId: string) {
+  const rows = await sql<{
+    id: string;
+    user_id: string;
+    status: string;
+    progress: number;
+    details: any;
+  }>`
+    SELECT id, user_id, status, progress, details
+    FROM tasks
+    WHERE id = ${taskId}
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+},
+
+async updateUserTask(
+  taskId: string,
+  data: {
+    status?: string;
+    progress?: number;
+    userNotes?: string;
+  }
+) {
+  const rows = await sql<{
+    details: any;
+  }>`
+    SELECT details
+    FROM tasks
+    WHERE id = ${taskId}
+    LIMIT 1
+  `;
+
+  const currentTask = rows[0];
+
+  let currentDetails: any = {};
+
+  if (currentTask?.details) {
+    try {
+      currentDetails =
+        typeof currentTask.details === "string"
+          ? JSON.parse(currentTask.details)
+          : currentTask.details;
+    } catch {
+      currentDetails = {};
+    }
+  }
+
+  const nextDetails = {
+    ...currentDetails,
+    ...(data.userNotes !== undefined ? { userNotes: data.userNotes } : {}),
+  };
+
+  const finalProgress =
+    data.status === "completed"
+      ? 100
+      : data.progress;
+
+  await sql`
+    UPDATE tasks
+    SET
+      status = COALESCE(${data.status}, status),
+      progress = COALESCE(${finalProgress}, progress),
+      details = ${JSON.stringify(nextDetails)},
+      completed_date = CASE
+        WHEN ${data.status} = 'completed' THEN CURRENT_TIMESTAMP
+        ELSE completed_date
+      END,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${taskId}
+  `;
+},
 
 };

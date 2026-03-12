@@ -54,44 +54,37 @@ export async function GET(req: Request) {
     const withMetrics = searchParams.get("withMetrics") === "1";
 
     // 2. Obtener presencia en tiempo real desde el servidor Socket
-  let onlineIds: string[] = [];
-try {
-  // Añadimos ?t=... para que la URL sea única y Next no use cache
-  const socketUrl = `http://localhost:4000/api/online-ids?t=${Date.now()}`;
-  
-  console.log("🚀 Intentando llamar a:", socketUrl);
+    let onlineIds: string[] = [];
+    try {
+      // Añadimos ?t=... para que la URL sea única y Next no use cache
+      const socketUrl = `http://localhost:4000/api/online-ids?t=${Date.now()}`;
 
-  const socketRes = await fetch(socketUrl, { 
-    method: 'GET',
-    cache: 'no-store', // Crucial
-    headers: {
-      'Content-Type': 'application/json',
+      console.log("🚀 Intentando llamar a:", socketUrl);
+
+      const socketRes = await fetch(socketUrl, {
+        method: 'GET',
+        cache: 'no-store', // Crucial
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (socketRes.ok) {
+        onlineIds = await socketRes.json();
+        console.log("✅ Respuesta del Socket Server:", onlineIds);
+      } else {
+        console.error("⚠️ El Socket Server respondió con status:", socketRes.status);
+      }
+    } catch (e: any) {
+      console.error("❌ Error de red conectando al Socket Server:", e.message);
     }
-  });
-
-  if (socketRes.ok) {
-    onlineIds = await socketRes.json();
-    console.log("✅ Respuesta del Socket Server:", onlineIds);
-  } else {
-    console.error("⚠️ El Socket Server respondió con status:", socketRes.status);
-  }
-} catch (e: any) {
-  console.error("❌ Error de red conectando al Socket Server:", e.message);
-}
     // 3. Lógica según parámetros
-    
+
     // CASO A: Usuario específico por ID
     if (id) {
       const u = await db.getUserWithDataById(id);
       if (!u) return jsonResponse({ error: "User not found" }, 404);
       return jsonResponse(formatUser(u, onlineIds));
-    }
-
-    // CASO B: Lista con métricas (Dashboard)
-    if (withMetrics) {
-      const users = await dashboardDb.getUsersWithMetrics();
-      if (!users) return jsonResponse([], 200);
-      return jsonResponse(users.map(u => formatUser(u, onlineIds)));
     }
 
     // CASO C: Lista general (por defecto)
