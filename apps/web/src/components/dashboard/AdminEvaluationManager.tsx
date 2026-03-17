@@ -47,6 +47,7 @@ export default function AdminEvaluationManager() {
     description: "",
     type: "environment" as EvaluationType,
     dueDate: "",
+    google_form_id: ""
   });
 
   // 2. EFECTOS
@@ -112,7 +113,7 @@ export default function AdminEvaluationManager() {
       });
       if (!response.ok) throw new Error("Error al crear");
       setShowCreateForm(false);
-      setNewEvaluation({ title: "", description: "", type: "environment", dueDate: "" });
+      setNewEvaluation({ title: "", description: "", type: "environment", dueDate: "", google_form_id: "" });
       await loadEvaluations();
     } catch (error) {
       alert("Error al crear la evaluación");
@@ -170,6 +171,13 @@ export default function AdminEvaluationManager() {
     return colors[type] || colors.environment;
   };
 
+  const extractGoogleFormId = (url: string) => {
+  // Regex para capturar el ID entre /d/ o /d/e/ y el siguiente slash
+  const regex = /\/d\/(?:e\/)?([a-zA-Z0-9_-]{40,})\//;
+  const match = url.match(regex);
+  return match ? match[1] : url; // Si no hay match, devuelve lo que el usuario pegó (por si ya era el ID)
+};
+
   if (loading) return <div className="p-6 text-center">Cargando evaluaciones...</div>;
 
   return (
@@ -212,6 +220,36 @@ export default function AdminEvaluationManager() {
                 value={newEvaluation.description}
                 onChange={(e) => setNewEvaluation({ ...newEvaluation, description: e.target.value })}
               />
+              <div className="flex flex-col gap-1">
+                 <div className="flex items-center justify-between">
+    <label className="text-sm font-medium text-gray-700">ID del Formulario de Google</label>
+    <a 
+      href="https://forms.new" 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded-full border border-blue-200 transition-colors flex items-center gap-1"
+    >
+      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Crear nuevo formulario
+    </a>
+  </div>
+              <input
+                type="text"
+                placeholder="ID de Google Form (ej: 1FAIpQLSf...)"
+                className="rounded-md border p-2 border-blue-300 focus:ring-2 focus:ring-blue-500"
+                value={newEvaluation.google_form_id}
+                onChange={(e) => {
+                    const rawValue = e.target.value;
+                    const cleanedId = extractGoogleFormId(rawValue);
+                    setNewEvaluation({ ...newEvaluation, google_form_id: cleanedId });
+                  }}
+              />
+              <span className="text-[10px] text-gray-500 ml-1">
+                Copia el ID largo que aparece en la URL de tu formulario.
+              </span>
+            </div>
               <input
                 type="date"
                 className="rounded-md border p-2"

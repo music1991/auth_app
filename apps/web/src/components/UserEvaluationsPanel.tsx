@@ -14,6 +14,7 @@ import {
   Send,
   Target,
 } from "lucide-react";
+import EvaluationFormModal from "./dashboard/EvaluationFormModal";
 
 type EvaluationStatus =
   | "pending"
@@ -59,6 +60,7 @@ interface UserEvaluation {
   details?: EvaluationDetails | string | null;
   questions?: EvaluationQuestion[] | string | null;
   assigned_by_name?: string | null;
+  google_form_id?: string | null;
 }
 
 type ResponsesMap = Record<string, string>;
@@ -168,6 +170,21 @@ export default function UserEvaluationsPanel() {
   const [responses, setResponses] = useState<ResponsesMap>({});
   const [starting, setStarting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+const [activeGoogleFormId, setActiveGoogleFormId] = useState<string | null>(null);
+const [activeGoogleFormTitle, setActiveGoogleFormTitle] = useState<string>("");
+
+const handleOpenGoogleForm = () => {
+  if (!selectedEvaluation?.google_form_id) {
+    alert("Esta evaluación no tiene un Google Form configurado");
+    return;
+  }
+
+  setActiveGoogleFormId(selectedEvaluation.google_form_id);
+  setActiveGoogleFormTitle(selectedEvaluation.title || "Evaluación");
+  setIsFormModalOpen(true);
+};
 
   useEffect(() => {
     const fetchEvaluations = async () => {
@@ -390,6 +407,7 @@ export default function UserEvaluationsPanel() {
   }
 
   return (
+    <>
     <div className="space-y-6 p-6">
       <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -715,20 +733,15 @@ export default function UserEvaluationsPanel() {
 
                     <div className="flex flex-wrap items-center justify-end gap-3">
                       {canStart && (
-                        <button
-                          type="button"
-                          onClick={handleStart}
-                          disabled={starting}
-                          className="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-600 disabled:opacity-60"
-                        >
-                          {starting ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <PlayCircle size={16} />
-                          )}
-                          {starting ? "Iniciando..." : "Iniciar evaluación"}
-                        </button>
-                      )}
+  <button
+    type="button"
+    onClick={handleOpenGoogleForm}
+    className="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-600"
+  >
+    <PlayCircle size={16} />
+    Iniciar evaluación
+  </button>
+)}
 
                       {canAnswer && questions.length > 0 && (
                         <button
@@ -794,5 +807,16 @@ export default function UserEvaluationsPanel() {
         </div>
       </div>
     </div>
+    <EvaluationFormModal
+  open={isFormModalOpen}
+  onClose={() => {
+    setIsFormModalOpen(false);
+    setActiveGoogleFormId(null);
+    setActiveGoogleFormTitle("");
+  }}
+  title={activeGoogleFormTitle}
+  googleFormId={activeGoogleFormId}
+/>
+</>
   );
 }

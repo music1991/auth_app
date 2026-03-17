@@ -570,6 +570,7 @@ async createEvaluationTemplate(template: {
   type: string;
   dueDate?: string | null;
   createdBy: string;
+  googleFormId?: string;
 }) {
   const rows = await sql<{ id: string }>`
     INSERT INTO evaluation_templates (
@@ -578,7 +579,8 @@ async createEvaluationTemplate(template: {
       type,
       status,
       created_by,
-      due_date
+      due_date,
+      google_form_id
     )
     VALUES (
       ${template.title},
@@ -586,13 +588,39 @@ async createEvaluationTemplate(template: {
       ${template.type},
       'draft',
       ${template.createdBy},
-      ${template.dueDate ?? null}
+      ${template.dueDate ?? null},
+      ${template.googleFormId ?? null}
     )
     RETURNING id
   `;
 
   return rows[0].id;
 },
+
+async updateEvaluationScoreByEmailAndForm(data: { 
+  email: string; 
+  score: number; 
+  googleFormId: string 
+}) {
+  const result = await sql`
+    UPDATE evaluations
+    SET
+      score = ${data.score},
+      status = 'completed',
+      completed_date = CURRENT_TIMESTAMP,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE user_id = (SELECT id FROM users WHERE email = ${data.email} LIMIT 1)
+      AND template_id = (SELECT id FROM evaluation_templates WHERE google_form_id = ${data.googleFormId} LIMIT 1)
+      AND status != 'completed'
+    RETURNING id;
+  `;
+
+  return {
+    success: result.length > 0,
+    evaluationId: result.length > 0 ? result[0].id : null
+  };
+},
+
 
 async publishEvaluationTemplate(templateId: string) {
   await sql`
@@ -620,6 +648,7 @@ async getUserEvaluations(userId: string) {
     title: string;
     description: string;
     type: string;
+    google_form_id: string;
   }>`
     SELECT
       e.id,
@@ -635,7 +664,8 @@ async getUserEvaluations(userId: string) {
       e.responses,
       et.title,
       et.description,
-      et.type
+      et.type,
+      et.google_form_id as google_form_id
     FROM evaluations e
     INNER JOIN evaluation_templates et ON et.id = e.template_id
     WHERE e.user_id = ${userId}
@@ -662,6 +692,7 @@ async getUserEvaluations(userId: string) {
     completedDate: row.completed_date,
     score: row.score ?? 0,
     maxScore: row.max_score ?? 0,
+    google_form_id: row.google_form_id,
     responses: row.responses,
   }));
 },

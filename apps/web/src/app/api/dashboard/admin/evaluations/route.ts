@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
         description: data.description,
         type: data.type,
         dueDate: data.dueDate,
+        googleFormId: data.google_form_id,
         createdBy: session.userId,
       });
 
@@ -61,10 +62,23 @@ export async function POST(request: NextRequest) {
 }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (error) {
-    console.error("Error in admin evaluations route:", error);
+} catch (error: any) {
+    // Esto lo verás en la terminal (si es local) o en los logs de Vercel
+    console.error("❌ ERROR AL CREAR EVALUACIÓN:");
+    console.error("Mensaje:", error.message);
+    
+    // Si usas Postgres/Neon, esto te dirá si falta una columna o hay error de sintaxis
+    if (error.code) {
+      console.error("Código Error Postgres:", error.code);
+      console.error("Detalle DB:", error.detail || "Sin detalles adicionales");
+    }
+
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Error interno al crear el template", 
+        technical_details: error.message,
+        hint: "Asegúrate de que la columna 'google_form_id' exista en la tabla 'evaluation_templates' en Neon"
+      }, 
       { status: 500 }
     );
   }
