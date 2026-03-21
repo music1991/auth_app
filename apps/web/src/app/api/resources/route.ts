@@ -1,5 +1,6 @@
+import { API_BASE_URL } from '@/lib/constants';
 import { NextResponse } from 'next/server';
-import { API_BASE_URL } from '../dashboard/admin/users/route';
+
 
 
 // Asegúrate de incluir el path completo /api/resources

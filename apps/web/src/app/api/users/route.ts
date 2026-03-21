@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { dashboardDb } from "@/lib/dashboard-db";
-import { API_BASE_URL, formatUser } from "../dashboard/admin/users/route";
+import { formatUser } from "../dashboard/admin/users/route";
+import { API_BASE_URL } from "@/lib/constants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

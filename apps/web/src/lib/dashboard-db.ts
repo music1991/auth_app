@@ -1,4 +1,3 @@
-import "server-only";
 import { sql } from "./db";
 import { AdminStats, DashboardTask, DashboardTaskListItem, UserStats, UserWithMetrics } from "@/app/types/types";
 

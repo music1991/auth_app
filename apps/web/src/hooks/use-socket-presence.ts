@@ -1,5 +1,6 @@
 "use client";
-import { API_BASE_URL } from "@/app/api/dashboard/admin/users/route";
+
+import { API_BASE_URL } from "@/lib/constants";
 import { useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 
