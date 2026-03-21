@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 
 // Asegúrate de incluir el path completo /api/resources
-const NODE_BACKEND_URL = `${API_BASE_URL}/api/resources`;
+const NODE_BACKEND_URL = `${API_BASE_URL}/resources`;
 
 export async function GET() {
   try {
