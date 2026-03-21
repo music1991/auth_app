@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("❌ Proxy Error:", error);
     return NextResponse.json(
-      { success: false, message: "Error de conexión con el servidor de recursos" + API_BASE_URL }, 
+      { success: false, message: API_BASE_URL }, 
       { status: 500 }
     );
   }
