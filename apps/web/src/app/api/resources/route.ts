@@ -30,38 +30,41 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // Asegúrate de que NODE_BACKEND_URL esté definida arriba o en el .env
+  const API_URL = process.env.NODE_BACKEND_URL || "URL_NO_DEFINIDA";
+
   try {
     const formData = await request.formData();
-
-    // --- LÓGICA DE VALIDACIÓN CORREGIDA ---
     const type = formData.get('type');
     const url = formData.get('url');
-    const file = formData.get('file');
 
-    // Solo validamos si es tipo 'link' y realmente NO enviaron nada en la URL
     if (type === 'link' && !url) {
-      return NextResponse.json(
-        { success: false, message: "Falta la URL para el recurso de tipo enlace" }, 
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: "Falta la URL" }, { status: 400 });
     }
 
-    // Si no hay archivo ni URL, pero sí un título, el backend de Node 
-    // lo creará como un recurso de texto/nota.
-    
-    const response = await fetch(NODE_BACKEND_URL, {
+    const response = await fetch(API_URL, {
       method: 'POST',
-      body: formData, // Next.js maneja el Boundary del FormData automáticamente
+      body: formData,
     });
+
+    // --- AQUÍ CAPTURAMOS EL 404 ---
+    if (response.status === 404) {
+      return NextResponse.json({
+        success: false,
+        message: `El backend devolvió 404. La URL intentada fue: ${API_URL}`,
+        status: 404
+      }, { status: 404 });
+    }
 
     const data = await response.json();
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error("❌ Proxy Error:", error);
-    return NextResponse.json(
-      { success: false, message: API_BASE_URL }, 
-      { status: 500 }
-    );
+    // Esto solo corre si el servidor de Node está APAGADO o la URL está mal formada
+    return NextResponse.json({ 
+      success: false, 
+      message: "Error de conexión o URL mal formada",
+      error_url: API_URL 
+    }, { status: 500 });
   }
 }
