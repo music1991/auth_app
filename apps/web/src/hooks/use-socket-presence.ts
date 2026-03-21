@@ -62,7 +62,7 @@ function useSocketPresence(user: any) {
 /**
  * Componente que inyectas en tu SiteLayout
  */
-export default function PresencePingg({ user }: { user: any }) {
+export default function PresencePing({ user }: { user: any }) {
   // Activamos el hook de presencia
 
   useSocketPresence(user);

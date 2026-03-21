@@ -23,7 +23,7 @@ export default function AdminStats() {
   const [stats, setStats] = useState<AdminStatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+/*   useEffect(() => {
     const fetchStats = async () => {
       try {
         const res = await fetch("/api/dashboard/admin/stats", { cache: "no-store" });
@@ -39,7 +39,7 @@ export default function AdminStats() {
     };
 
     fetchStats();
-  }, []);
+  }, []); */
 
   if (loading) {
     return (

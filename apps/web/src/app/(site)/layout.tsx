@@ -2,8 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
 import { Navbar } from "@/components/Navbar";
-import PresencePing from "@/components/PresencePing";
-import PresencePingg from "@/hooks/use-socket-presence";
+import PresencePing from "@/hooks/use-socket-presence";
 
 
 function isValid(token?: string) {
@@ -31,8 +30,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
 
   return (
     <>
-      {/*       <PresencePing /> */}
-      <PresencePingg user={userSession} />
+      <PresencePing user={userSession} />
       <Navbar role={role!} />
       <div className="mx-auto max-w-5xl px-4 py-8">
         <section className="">

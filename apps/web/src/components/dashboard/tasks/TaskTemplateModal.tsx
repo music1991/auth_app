@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { TaskTemplate, TaskTemplatePayload } from "@/hooks/useTaskTemplates";
+import { resourceApi } from "@/services/resourceApi";
 
 interface TaskTemplateModalProps {
   open: boolean;
@@ -12,12 +13,27 @@ interface TaskTemplateModalProps {
   onSubmit: (data: TaskTemplatePayload) => Promise<void>;
 }
 
+interface PendingResource {
+  title: string;
+  type: "pdf" | "link";
+  file?: File;
+  url?: string;
+}
+
+// Interfaz para los recursos que vienen de la DB
+interface ExistingResource {
+  id: number;
+  title: string;
+  url: string;
+  type: string;
+}
+
 const defaultForm: TaskTemplatePayload = {
   title: "",
   description: "",
   type: "course",
   estimatedHours: 1,
-  requirements: [""],
+  requirements: [], // Aquí guardaremos los IDs
 };
 
 export default function TaskTemplateModal({
@@ -29,206 +45,207 @@ export default function TaskTemplateModal({
   onSubmit,
 }: TaskTemplateModalProps) {
   const [form, setForm] = useState<TaskTemplatePayload>(defaultForm);
+  const [dbResources, setDbResources] = useState<ExistingResource[]>([]);
+  const [selectedDbIds, setSelectedDbIds] = useState<number[]>([]);
+  const [pendingResources, setPendingResources] = useState<PendingResource[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 1. Cargar recursos de la base de datos al abrir el modal
   useEffect(() => {
     if (!open) return;
 
+    const fetchResources = async () => {
+      const res = await resourceApi.getAll();
+      if (res.success) setDbResources(res.data);
+    };
+
+    fetchResources();
+
     if (mode === "edit" && template) {
-      setForm({
-        title: template.title,
-        description: template.description,
-        type: template.type,
-        estimatedHours: template.estimatedHours,
-        requirements:
-          template.requirements?.length > 0 ? template.requirements : [""],
-      });
+      setForm({ ...template, requirements: template.requirements || [] });
+      // Si requirements ya tiene IDs, los marcamos como seleccionados
+      setSelectedDbIds(template.requirements.map(Number));
     } else {
       setForm(defaultForm);
+      setSelectedDbIds([]);
+      setPendingResources([]);
     }
   }, [open, mode, template]);
 
   if (!open) return null;
 
-  const updateRequirement = (index: number, value: string) => {
-    setForm((prev) => {
-      const requirements = [...prev.requirements];
-      requirements[index] = value;
-      return { ...prev, requirements };
-    });
+  // --- LÓGICA DE SELECCIÓN Y CARGA ---
+
+  const toggleExistingResource = (id: number) => {
+    setSelectedDbIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
   };
 
-  const addRequirement = () => {
-    setForm((prev) => ({
-      ...prev,
-      requirements: [...prev.requirements, ""],
-    }));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setPendingResources(prev => [...prev, { title: selectedFile.name, type: "pdf", file: selectedFile }]);
+    }
   };
 
-  const removeRequirement = (index: number) => {
-    setForm((prev) => {
-      const requirements = prev.requirements.filter((_, i) => i !== index);
-      return {
-        ...prev,
-        requirements: requirements.length ? requirements : [""],
-      };
-    });
+  const addLinkResource = () => {
+    setPendingResources(prev => [...prev, { title: "Nuevo enlace", type: "link", url: "" }]);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const removePendingResource = (index: number) => {
+    setPendingResources(prev => prev.filter((_, i) => i !== index));
+  };
 
+  // --- SUBMIT ---
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsUploading(true);
+
+  try {
+    let newResourceIds: string[] = [];
+
+    // 1. Si hay PDF o Link nuevo, se guardan en la tabla 'resources' de Node
+    if (pendingResources.length > 0) {
+      newResourceIds = await Promise.all(
+        pendingResources.map(async (res) => {
+          // El link se envía aquí; Node lo guardará en la DB y devolverá su ID
+          const result = await resourceApi.create({
+            title: res.title || (res.type === 'link' ? "Enlace externo" : "Documento"),
+            type: res.type,
+            file: res.file,
+            url: res.url, // Aquí viaja el link
+          });
+
+          if (!result.success) throw new Error(result.message);
+          
+          // Convertimos el ID a string para que coincida con el tipo de la interfaz
+          return String(result.data.id); 
+        })
+      );
+    }
+
+    // 2. Combinamos IDs seleccionados del Combo (convertidos a string) + IDs nuevos
+    const selectedIdsStr = selectedDbIds.map(id => String(id));
+    const finalResourceIds = Array.from(new Set([
+      ...selectedIdsStr, 
+      ...newResourceIds
+    ])).filter(Boolean);
+
+    // 3. Payload final (Sin errores de tipo)
     const payload: TaskTemplatePayload = {
       title: form.title.trim(),
       description: form.description.trim(),
       type: form.type,
       estimatedHours: Number(form.estimatedHours),
-      requirements: form.requirements.map((r) => r.trim()).filter(Boolean),
+      requirements: finalResourceIds, // Ahora es string[] y TS estará feliz
     };
 
     await onSubmit(payload);
     onClose();
-  };
+
+  } catch (error: any) {
+    console.error("❌ Error:", error);
+    alert(error.message || "Hubo un problema al procesar los recursos");
+  } finally {
+    setIsUploading(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
+      <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl max-h-[95vh] flex flex-col">
         <div className="flex items-center justify-between border-b px-6 py-4">
-          <h3 className="text-lg font-semibold">
-            {mode === "create" ? "Nueva plantilla" : "Editar plantilla"}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded px-3 py-1 text-sm text-gray-500 hover:bg-gray-100"
-          >
-            ✕
-          </button>
+          <h3 className="text-lg font-semibold">{mode === "create" ? "Nueva plantilla" : "Editar plantilla"}</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-black">✕</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Título
-            </label>
-            <input
-              value={form.title}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, title: e.target.value }))
-              }
-              className="w-full rounded-md border border-gray-300 px-3 py-2"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 px-6 py-5">
+          {/* Inputs básicos */}
+          <input 
+            placeholder="Título" value={form.title} required
+            onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+            className="w-full rounded-md border p-2" 
+          />
+          <textarea 
+            placeholder="Descripción" value={form.description} required
+            onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+            className="w-full rounded-md border p-2 h-20" 
+          />
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Descripción
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, description: e.target.value }))
-              }
-              className="h-24 w-full rounded-md border border-gray-300 px-3 py-2"
-              required
-            />
-          </div>
+          {/* Selector de Recursos Existentes */}
+          <div className="border-t pt-4">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Seleccionar recursos existentes</label>
+            <select 
+              className="w-full rounded-md border p-2 mb-2"
+              onChange={(e) => toggleExistingResource(Number(e.target.value))}
+              value=""
+            >
+              <option value="" disabled>Selecciona un recurso guardado...</option>
+              {dbResources.map(r => (
+                <option key={r.id} value={r.id} disabled={selectedDbIds.includes(r.id)}>
+                  {r.title} ({r.type})
+                </option>
+              ))}
+            </select>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Tipo
-              </label>
-              <select
-                value={form.type}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    type: e.target.value as TaskTemplatePayload["type"],
-                  }))
-                }
-                className="w-full rounded-md border border-gray-300 px-3 py-2"
-              >
-                <option value="course">Curso</option>
-                <option value="report">Reporte</option>
-                <option value="project">Proyecto</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Horas estimadas
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={form.estimatedHours}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    estimatedHours: Number(e.target.value),
-                  }))
-                }
-                className="w-full rounded-md border border-gray-300 px-3 py-2"
-                required
-              />
+            {/* Chips de recursos seleccionados */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {selectedDbIds.map(id => {
+                const res = dbResources.find(r => r.id === id);
+                return (
+                  <div key={id} className="flex items-center gap-2 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs border border-blue-200">
+                    <span>{res?.title || `ID: ${id}`}</span>
+                    <button type="button" onClick={() => toggleExistingResource(id)} className="font-bold">✕</button>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-700">
-                Requisitos
-              </label>
-              <button
-                type="button"
-                onClick={addRequirement}
-                className="rounded bg-gray-100 px-3 py-1 text-sm hover:bg-gray-200"
-              >
-                + Agregar
-              </button>
+          {/* Carga de nuevos recursos */}
+          <div className="border-t pt-4">
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-semibold">Cargar nuevos (PDF o Link)</label>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs bg-gray-100 p-1 rounded">+ PDF</button>
+                <button type="button" onClick={addLinkResource} className="text-xs bg-gray-100 p-1 rounded">+ Link</button>
+              </div>
+              <input type="file" ref={fileInputRef} hidden accept=".pdf" onChange={handleFileChange} />
             </div>
 
             <div className="space-y-2">
-              {form.requirements.map((req, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    value={req}
-                    onChange={(e) => updateRequirement(index, e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2"
-                    placeholder={`Requisito ${index + 1}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeRequirement(index)}
-                    className="rounded bg-red-50 px-3 py-2 text-sm text-red-600 hover:bg-red-100"
-                  >
-                    Quitar
-                  </button>
+              {pendingResources.map((res, i) => (
+                <div key={i} className="flex gap-2 items-center bg-gray-50 p-2 rounded border">
+                  <span className="text-xs uppercase font-bold">{res.type}</span>
+                  {res.type === 'link' ? (
+                    <input 
+                      placeholder="URL..." value={res.url} required
+                      onChange={e => {
+                        const newRes = [...pendingResources];
+                        newRes[i].url = e.target.value;
+                        setPendingResources(newRes);
+                      }}
+                      className="flex-1 text-sm bg-transparent border-b" 
+                    />
+                  ) : (
+                    <span className="flex-1 text-sm truncate">{res.file?.name}</span>
+                  )}
+                  <button type="button" onClick={() => removePendingResource(i)} className="text-red-400">✕</button>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 border-t pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded bg-gray-200 px-4 py-2 font-medium hover:bg-gray-300"
-              disabled={submitting}
+          <div className="flex justify-end gap-2 pt-4">
+            <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-100 rounded">Cancelar</button>
+            <button 
+              type="submit" disabled={isUploading || submitting}
+              className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
             >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="rounded bg-green-500 px-4 py-2 font-medium text-white hover:bg-green-600 disabled:opacity-50"
-              disabled={submitting}
-            >
-              {submitting
-                ? "Guardando..."
-                : mode === "create"
-                ? "Crear plantilla"
-                : "Guardar cambios"}
+              {isUploading ? "Subiendo..." : "Guardar plantilla"}
             </button>
           </div>
         </form>

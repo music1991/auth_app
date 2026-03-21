@@ -12,14 +12,19 @@ const jsonResponse = (data: any, status = 200) => {
   });
 };
 
-const formatUser = (u: any, onlineIds: string[] = []) => {
-  const isOnline = onlineIds.includes(u.id);
+export const formatUser = (u: any, onlineUsers: any[] = []) => {
+  // Buscamos si existe algún objeto cuyo userId coincida con u.id
+  const isOnline = onlineUsers.some(user => user.userId === u.id);
+
+  console.log("Carga onlineUsers (total):", onlineUsers.length);
+  console.log(`¿Usuario ${u.name} online?:`, isOnline);
 
   return {
     id: u.id,
     name: u.name ?? "Sin nombre",
     email: u.email,
     role: (u.role ?? "user") as "user" | "admin",
+    // Si está en la lista, forzamos "active"
     status: isOnline ? "active" : (u.status ?? "inactive"),
     verified: !!u.verified,
     createdAt: u.created_at || new Date().toISOString(),
@@ -44,9 +49,11 @@ export async function GET() {
       return jsonResponse({ error: "Forbidden" }, 403);
     }
 
+
     let onlineIds: string[] = [];
 
     try {
+          
       const socketUrl = `http://localhost:4000/api/online-ids?t=${Date.now()}`;
 
       const socketRes = await fetch(socketUrl, {
@@ -57,8 +64,13 @@ export async function GET() {
         },
       });
 
+         
+
       if (socketRes.ok) {
+
+
         onlineIds = await socketRes.json();
+         console.log("llega 3 peticion", onlineIds)
       }
     } catch (e: any) {
       console.error("Socket presence error:", e.message);

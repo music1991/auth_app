@@ -1,6 +1,6 @@
 import "server-only";
 import { sql } from "./db";
-import { AdminStats, DashboardTask, UserStats, UserWithMetrics } from "@/app/types/types";
+import { AdminStats, DashboardTask, DashboardTaskListItem, UserStats, UserWithMetrics } from "@/app/types/types";
 
 // --- TYPES ---
 // (Mantenemos tus tipos igual, omitidos aquí por brevedad para ir a la lógica)
@@ -60,17 +60,144 @@ export const dashboardDb = {
     };
   },
 
-  async getUserTasks(userId: string): Promise<DashboardTask[]> {
-    return await sql<DashboardTask>`
-      SELECT t.*, u.name as assigned_by_name
+  async getUserTasks(userId: string): Promise<DashboardTaskListItem[]> {
+    return await sql<DashboardTaskListItem>`
+      SELECT
+        t.id,
+        t.title,
+        t.description,
+        t.status,
+        t.progress,
+        t.due_date
       FROM tasks t
-      LEFT JOIN users u ON u.id = t.assigned_by
       WHERE t.user_id = ${userId}
-      ORDER BY 
-        CASE t.status WHEN 'in-progress' THEN 1 WHEN 'pending' THEN 2 ELSE 3 END,
-        t.due_date ASC, t.created_at DESC
+      ORDER BY
+        CASE t.status
+          WHEN 'in-progress' THEN 1
+          WHEN 'pending' THEN 2
+          ELSE 3
+        END,
+        t.due_date ASC,
+        t.created_at DESC
     `;
   },
+
+async getUserTaskById(
+  userId: string,
+  taskId: string
+): Promise<DashboardTask | null> {
+  const rows = await sql<DashboardTask>`
+    SELECT
+      t.id,
+      t.template_id,
+      t.title,
+      t.description,
+      t.status,
+      t.progress,
+      t.assigned_date,
+      t.due_date,
+      t.completed_date,
+      t.details,
+      tt.requirements,
+      u.name AS assigned_by_name,
+      COALESCE(
+        (
+          SELECT json_agg(
+            json_build_object(
+              'id', r.id,
+              'title', r.title,
+              'type', r.type,
+              'url', r.url
+            )
+            ORDER BY r.created_at DESC
+          )
+          FROM resources r
+          WHERE r.id IN (
+  SELECT id FROM (
+    SELECT
+      CASE
+        WHEN jsonb_typeof(value) = 'number' THEN (value::text)::int
+        WHEN jsonb_typeof(value) = 'string'
+          AND trim(both '"' from value::text) ~ '^[0-9]+$'
+        THEN (trim(both '"' from value::text))::int
+        ELSE NULL
+      END AS id
+    FROM jsonb_array_elements(COALESCE(tt.requirements, '[]'::jsonb)) AS value
+  ) sub
+  WHERE id IS NOT NULL
+)
+        ),
+        '[]'::json
+      ) AS resources
+    FROM tasks t
+    LEFT JOIN task_templates tt ON tt.id = t.template_id
+    LEFT JOIN users u ON u.id = t.assigned_by
+    WHERE t.user_id = ${userId}
+      AND t.id = ${taskId}
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+},
+
+
+async getAdminUserTaskById(
+  userId: string,
+  taskId: string
+): Promise<DashboardTask | null> {
+  const rows = await sql<DashboardTask>`
+    SELECT
+      t.id,
+      t.template_id,
+      t.title,
+      t.description,
+      t.status,
+      t.progress,
+      t.assigned_date,
+      t.due_date,
+      t.completed_date,
+      t.details,
+      tt.requirements,
+      u.name AS assigned_by_name,
+      COALESCE(
+        (
+          SELECT json_agg(
+            json_build_object(
+              'id', r.id,
+              'name', r.title,
+              'type', r.type,
+              'url', r.url
+            )
+            ORDER BY r.created_at DESC
+          )
+          FROM resources r
+          WHERE r.id IN (
+            SELECT id FROM (
+              SELECT
+                CASE
+                  WHEN jsonb_typeof(value) = 'number' THEN (value::text)::int
+                  WHEN jsonb_typeof(value) = 'string'
+                    AND trim(both '"' from value::text) ~ '^[0-9]+$'
+                  THEN (trim(both '"' from value::text))::int
+                  ELSE NULL
+                END AS id
+              FROM jsonb_array_elements(COALESCE(tt.requirements, '[]'::jsonb)) AS value
+            ) sub
+            WHERE id IS NOT NULL
+          )
+        ),
+        '[]'::json
+      ) AS resources
+    FROM tasks t
+    LEFT JOIN task_templates tt ON tt.id = t.template_id
+    LEFT JOIN users u ON u.id = t.assigned_by
+    WHERE t.user_id = ${userId}
+      AND t.id = ${taskId}
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+},
 
   async updateTaskStatus(taskId: string, status: string): Promise<void> {
     await sql`

@@ -222,12 +222,6 @@ function VerificationNotice({
       ) : (
         "—"
       )}
-      {/* DEV helper
-      {devCode ? (
-        <div className="mt-1 text-xs text-gray-500">
-          (DEV) Code: <span className="font-mono">{devCode}</span>
-        </div>
-      ) : null} */}
     </>
   );
 }

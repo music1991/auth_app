@@ -5,12 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-/* interface LoginResponse {
-  success: boolean;
-  error?: string; // Por si falla
-  code?: number;  // Tu código 100 por ejemplo
-} */
-
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
@@ -19,12 +13,12 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
+
     if (form.email.trim().length === 0 || form.password.trim().length === 0) {
       toast.error("All fields are required.");
       return;
     }
-    
+
     setLoading(true);
 
     try {
@@ -34,12 +28,12 @@ export default function LoginPage() {
         body: JSON.stringify(form),
         cache: "no-store"
       });
-      
+
       const data = await res.json();
 
       if (!res.ok) {
         toast.error(data.error);
-        
+
         if (data.code === 100) {
           setShowWarningRedirect(true);
           setTimeout(() => {
@@ -54,13 +48,13 @@ export default function LoginPage() {
         window.location.href = "/";
         return;
       }
-      
+
     } catch (error) {
       console.error("Login error:", error);
       toast.error("An error occurred during login");
       setLoading(false);
     }
-      
+
   }
 
 
@@ -77,7 +71,7 @@ export default function LoginPage() {
   return (
     <form onSubmit={handleSubmit} className="max-w-sm mx-auto space-y-4">
       <h1 className="text-2xl font-bold">Sign In</h1>
-      
+
       <input
         suppressHydrationWarning
         className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -88,13 +82,13 @@ export default function LoginPage() {
         required
         disabled={loading}
       />
-      
+
       <PasswordField
         value={form.password}
         onChange={(e) => setForm({ ...form, password: e.target.value })}
         disabled={loading}
       />
-      
+
       {loading ? (
         <div className="flex justify-center items-center py-2">
           <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-green-600"></div>
@@ -121,7 +115,7 @@ export default function LoginPage() {
       )}
 
       <div className="text-sm justify-between flex flex-row pl-2 pr-2">
-        <button 
+        <button
           suppressHydrationWarning
           type="button"
           onClick={() => handleQuickRedirect('/register')}
@@ -130,7 +124,7 @@ export default function LoginPage() {
         >
           REGISTER HERE
         </button>
-        <button 
+        <button
           suppressHydrationWarning
           type="button"
           onClick={() => handleQuickRedirect('/forgot')}
@@ -140,7 +134,8 @@ export default function LoginPage() {
           Forgot your password?
         </button>
       </div>
-
+      
+{/* Estas Partes Son Temporales */}
       <div className="mt-12 flex gap-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex-col">
         <div className="flex flex-col mt-3 mb-3 items-center justify-center">
           <div className="mb-4 text-center">
@@ -159,14 +154,42 @@ export default function LoginPage() {
           </span>
         </div>
         <button
-      type="button"
-      onClick={() => setForm({ email: userAdmin.email, password: userAdmin.password })}
-      className="mt-3 bg-green-200 hover:bg-green-300 text-green-800 px-4 py-2 rounded-md transition-all duration-200 active:scale-95 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-      disabled={loading}
-      suppressHydrationWarning
-    >
-      Use Admin Account
-    </button>
+          type="button"
+          onClick={() => setForm({ email: userAdmin.email, password: userAdmin.password })}
+          className="mt-3 bg-green-200 hover:bg-green-300 text-green-800 px-4 py-2 rounded-md transition-all duration-200 active:scale-95 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
+          suppressHydrationWarning
+        >
+          Use Admin Account
+        </button>
+      </div>
+
+      <div className="mt-12 flex gap-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex-col">
+        <div className="flex flex-col mt-3 mb-3 items-center justify-center">
+          <div className="mb-4 text-center">
+            <span role="img" aria-label="key">🔑</span>
+            <span>
+              You can register or try the <strong>demo admin account</strong>.
+            </span>
+          </div>
+          <span>
+            <span className="font-medium">Email:</span>{" "}
+            <code className="font-mono">{"sebastians201991@gmail.com"}</code>{" "}
+          </span>
+          <span>
+            <span className="font-medium">Password:</span>{" "}
+            <code className="font-mono">{"Practicante.1"}</code>
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setForm({ email: "sebastians201991@gmail.com", password: "Practicante.1" })}
+          className="mt-3 bg-green-200 hover:bg-green-300 text-green-800 px-4 py-2 rounded-md transition-all duration-200 active:scale-95 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
+          suppressHydrationWarning
+        >
+          Use User Account
+        </button>
       </div>
     </form>
   );

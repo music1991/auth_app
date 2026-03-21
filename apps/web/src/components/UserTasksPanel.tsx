@@ -25,21 +25,38 @@ interface TaskDetails {
   userNotes?: string;
 }
 
-interface UserTask {
+interface TaskResource {
+  id: number | string;
+  name: string;
+  type: string;
+  url: string;
+}
+
+interface UserTaskListItem {
+  id: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  progress: number;
+  due_date?: string | null;
+}
+
+interface UserTaskDetail {
   id: string;
   template_id?: string;
   title: string;
   description: string;
   status: TaskStatus;
   progress: number;
-  assigned_date?: string;
-  due_date?: string;
+  assigned_date?: string | null;
+  due_date?: string | null;
   completed_date?: string | null;
   details?: TaskDetails | string | null;
   assigned_by_name?: string | null;
+  resources?: TaskResource[];
 }
 
-function parseDetails(details: UserTask["details"]): TaskDetails {
+function parseDetails(details: UserTaskDetail["details"]): TaskDetails {
   if (!details) return {};
   if (typeof details === "string") {
     try {
@@ -91,12 +108,39 @@ function formatDate(date?: string | null) {
   return parsed.toLocaleDateString();
 }
 
+function normalizeUrl(url?: string) {
+  if (!url) return "#";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `https://${url}`;
+}
+
+function getResourceTypeLabel(type?: string) {
+  if (!type) return "Recurso";
+
+  switch (type.toLowerCase()) {
+    case "pdf":
+      return "PDF";
+    case "link":
+      return "Link";
+    case "video":
+      return "Video";
+    case "doc":
+    case "document":
+      return "Documento";
+    default:
+      return type;
+  }
+}
+
 export default function UserTasksPanel() {
-  const [tasks, setTasks] = useState<UserTask[]>([]);
+  const [tasks, setTasks] = useState<UserTaskListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<UserTaskDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   const [status, setStatus] = useState<TaskStatus>("pending");
   const [progress, setProgress] = useState(0);
@@ -120,12 +164,7 @@ export default function UserTasksPanel() {
           throw new Error(data.error || "Error loading tasks");
         }
 
-        const incomingTasks: UserTask[] = data.tasks || [];
-        setTasks(incomingTasks);
-
-        if (incomingTasks.length > 0) {
-          setSelectedTaskId(incomingTasks[0].id);
-        }
+        setTasks(data.tasks || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error loading tasks");
       } finally {
@@ -136,10 +175,45 @@ export default function UserTasksPanel() {
     fetchTasks();
   }, []);
 
-  const selectedTask = useMemo(
-    () => tasks.find((task) => task.id === selectedTaskId) || null,
-    [tasks, selectedTaskId]
-  );
+  useEffect(() => {
+    if (!selectedTaskId) {
+      setSelectedTask(null);
+      setDetailError(null);
+      return;
+    }
+
+    const fetchTaskDetail = async () => {
+      try {
+        setDetailLoading(true);
+        setDetailError(null);
+
+        const response = await fetch(
+          `/api/dashboard/user/tasks/${selectedTaskId}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Error loading task detail");
+        }
+
+        setSelectedTask(data.task);
+      } catch (err) {
+        setSelectedTask(null);
+        setDetailError(
+          err instanceof Error ? err.message : "Error loading task detail"
+        );
+      } finally {
+        setDetailLoading(false);
+      }
+    };
+
+    fetchTaskDetail();
+  }, [selectedTaskId]);
 
   useEffect(() => {
     if (!selectedTask) return;
@@ -157,24 +231,19 @@ export default function UserTasksPanel() {
     try {
       setSaving(true);
 
-      // Por ahora la route que tienes guarda estado.
-      // El progreso y las notas se dejan listos para cuando amplíes el endpoint.
       const response = await fetch("/api/dashboard/user/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-         /*  action: "update-task-status",
-          data: { */
-            taskId: selectedTask.id,
-            status,
-            progress,
-            details: {
-              ...parseDetails(selectedTask.details),
-              userNotes,
-            },
-         // },
+          taskId: selectedTask.id,
+          status,
+          progress,
+          details: {
+            ...parseDetails(selectedTask.details),
+            userNotes,
+          },
         }),
       });
 
@@ -184,6 +253,26 @@ export default function UserTasksPanel() {
         throw new Error(data.error || "Error updating task");
       }
 
+      const updatedCompletedDate =
+        status === "completed"
+          ? selectedTask.completed_date ?? new Date().toISOString()
+          : selectedTask.completed_date;
+
+      setSelectedTask((prev) =>
+        prev
+          ? {
+              ...prev,
+              status,
+              progress,
+              details: {
+                ...parseDetails(prev.details),
+                userNotes,
+              },
+              completed_date: updatedCompletedDate,
+            }
+          : prev
+      );
+
       setTasks((prev) =>
         prev.map((task) =>
           task.id === selectedTask.id
@@ -191,14 +280,6 @@ export default function UserTasksPanel() {
                 ...task,
                 status,
                 progress,
-                details: {
-                  ...parseDetails(task.details),
-                  userNotes,
-                },
-                completed_date:
-                  status === "completed"
-                    ? new Date().toISOString()
-                    : task.completed_date,
               }
             : task
         )
@@ -246,34 +327,36 @@ export default function UserTasksPanel() {
 
   return (
     <div className="space-y-6">
-      {/*
-      <UserStats />
-      Dejado para después cuando esté lista la API de estadísticas
-      */}
-
       <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900">
-              Mis tareas
-            </h2>
+            <h2 className="text-2xl font-semibold text-gray-900">Mis tareas</h2>
             <p className="mt-1 text-sm text-gray-500">
-              Consulta tus tareas asignadas, actualiza tu estado y registra tu avance.
+              Consulta tus tareas asignadas, actualiza tu estado y registra tu
+              avance.
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
               <p className="text-xs font-medium text-amber-700">Pendientes</p>
-              <p className="mt-1 text-xl font-bold text-amber-900">{stats.pending}</p>
+              <p className="mt-1 text-xl font-bold text-amber-900">
+                {stats.pending}
+              </p>
             </div>
             <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3">
               <p className="text-xs font-medium text-blue-700">En progreso</p>
-              <p className="mt-1 text-xl font-bold text-blue-900">{stats.inProgress}</p>
+              <p className="mt-1 text-xl font-bold text-blue-900">
+                {stats.inProgress}
+              </p>
             </div>
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <p className="text-xs font-medium text-emerald-700">Completadas</p>
-              <p className="mt-1 text-xl font-bold text-emerald-900">{stats.completed}</p>
+              <p className="text-xs font-medium text-emerald-700">
+                Completadas
+              </p>
+              <p className="mt-1 text-xl font-bold text-emerald-900">
+                {stats.completed}
+              </p>
             </div>
           </div>
         </div>
@@ -319,7 +402,9 @@ export default function UserTasksPanel() {
 
                         <ChevronRight
                           size={18}
-                          className={isSelected ? "text-green-600" : "text-gray-400"}
+                          className={
+                            isSelected ? "text-green-600" : "text-gray-400"
+                          }
                         />
                       </div>
 
@@ -356,9 +441,31 @@ export default function UserTasksPanel() {
           </div>
 
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
-            {!selectedTask ? (
-              <div className="flex h-full min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-center text-gray-500">
-                Selecciona una tarea para ver sus detalles.
+            {!selectedTaskId ? (
+              <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 text-center">
+                <div>
+                  <h4 className="text-base font-semibold text-gray-900">
+                    Selecciona una tarea
+                  </h4>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Elige una tarea de la lista para ver su detalle completo.
+                  </p>
+                </div>
+              </div>
+            ) : detailLoading ? (
+              <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-gray-200 bg-gray-50">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Loader2 size={16} className="animate-spin" />
+                  Cargando detalle...
+                </div>
+              </div>
+            ) : detailError ? (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {detailError}
+              </div>
+            ) : !selectedTask ? (
+              <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-center text-gray-500">
+                No se pudo cargar la tarea seleccionada.
               </div>
             ) : (
               (() => {
@@ -371,7 +478,9 @@ export default function UserTasksPanel() {
                     <div className="flex flex-col gap-4 border-b border-gray-100 pb-5 lg:flex-row lg:items-start lg:justify-between">
                       <div>
                         <div className="mb-2 flex items-center gap-2">
-                          <span className={`h-2.5 w-2.5 rounded-full ${statusConfig.dot}`} />
+                          <span
+                            className={`h-2.5 w-2.5 rounded-full ${statusConfig.dot}`}
+                          />
                           <span
                             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${statusConfig.badge}`}
                           >
@@ -416,7 +525,9 @@ export default function UserTasksPanel() {
                           Horas estimadas
                         </div>
                         <p className="text-sm text-gray-900">
-                          {details.estimatedHours ? `${details.estimatedHours}h` : "—"}
+                          {details.estimatedHours
+                            ? `${details.estimatedHours}h`
+                            : "—"}
                         </p>
                       </div>
 
@@ -445,24 +556,39 @@ export default function UserTasksPanel() {
                     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                       <div className="rounded-2xl border border-gray-200 bg-white p-4">
                         <h4 className="mb-3 font-medium text-gray-900">
-                          Requisitos
+                          Recursos
                         </h4>
 
-                        {details.requirements && details.requirements.length > 0 ? (
+                        {selectedTask.resources &&
+                        selectedTask.resources.length > 0 ? (
                           <ul className="space-y-2">
-                            {details.requirements.map((req, index) => (
-                              <li
-                                key={`${req}-${index}`}
-                                className="flex items-start gap-3 rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-700"
-                              >
-                                <span className="mt-1 h-2 w-2 rounded-full bg-green-500" />
-                                <span>{req}</span>
+                            {selectedTask.resources.map((resource) => (
+                              <li key={resource.id}>
+                                <a
+                                  href={normalizeUrl(resource.url)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-sm transition hover:border-gray-300 hover:bg-white"
+                                >
+                                  <div className="min-w-0">
+                                    <p className="truncate font-medium text-gray-900">
+                                      {resource.name}
+                                    </p>
+                                    <p className="mt-1 truncate text-xs text-gray-500">
+                                      {resource.url}
+                                    </p>
+                                  </div>
+
+                                  <span className="shrink-0 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium uppercase text-gray-600">
+                                    {getResourceTypeLabel(resource.type)}
+                                  </span>
+                                </a>
                               </li>
                             ))}
                           </ul>
                         ) : (
                           <p className="text-sm text-gray-500">
-                            No hay requisitos definidos.
+                            No hay recursos asociados a esta tarea.
                           </p>
                         )}
                       </div>
@@ -479,7 +605,9 @@ export default function UserTasksPanel() {
                             </label>
                             <select
                               value={status}
-                              onChange={(e) => setStatus(e.target.value as TaskStatus)}
+                              onChange={(e) =>
+                                setStatus(e.target.value as TaskStatus)
+                              }
                               className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-green-500"
                             >
                               <option value="pending">Pendiente</option>
@@ -514,10 +642,6 @@ export default function UserTasksPanel() {
                                 style={{ width: `${progress}%` }}
                               />
                             </div>
-
-                            <p className="mt-2 text-xs text-gray-500">
-                              El guardado de progreso se deja listo para cuando amplíes la route.
-                            </p>
                           </div>
 
                           <div>

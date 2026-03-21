@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth";
+/* import { getSession } from "@/lib/auth";
 import {
   Mail,
   ShieldCheck,
@@ -32,7 +32,7 @@ export default async function HomePage() {
   if (!session) {
     redirect("/login");
   }
-  
+
   return (
     <section className="space-y-8">
       <div className="space-y-2">
@@ -163,3 +163,4 @@ export default async function HomePage() {
     </section>
   );
 }
+ */

@@ -14,7 +14,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     if (session.role !== "admin") {
       return NextResponse.json({ error: "Prohibido" }, { status: 403 });
     }
-    if (session.sub === params.id) {
+    if (session.userId === params.id) {
       return NextResponse.json({ error: "You cannot delete your own account." }, { status: 400 });
     }
 

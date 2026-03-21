@@ -4,7 +4,7 @@ import { dashboardDb } from "@/lib/dashboard-db";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -13,14 +13,23 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params;
-    const taskId = id;
+    const { id, taskId } = await params;
 
-    if (!taskId) {
-      return NextResponse.json({ error: "Task id is required" }, { status: 400 });
+    if (!id) {
+      return NextResponse.json(
+        { error: "User id is required" },
+        { status: 400 }
+      );
     }
 
-    const task = await dashboardDb.getUserTaskById(session.userId, taskId);
+    if (!taskId) {
+      return NextResponse.json(
+        { error: "Task id is required" },
+        { status: 400 }
+      );
+    }
+
+    const task = await dashboardDb.getAdminUserTaskById(id, taskId);
 
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
@@ -28,11 +37,12 @@ export async function GET(
 
     return NextResponse.json({ task });
   } catch (error) {
-    console.error("Error fetching user task detail:", error);
+    console.error("Error fetching admin task detail:", error);
 
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Internal server error",
+        error:
+          error instanceof Error ? error.message : "Internal server error",
         detail: error,
       },
       { status: 500 }

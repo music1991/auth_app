@@ -43,21 +43,36 @@ export interface UserWithMetrics extends User {
 export type TaskType = "course" | "report" | "project";
 export type TaskStatus = "pending" | "in-progress" | "completed";
 
+export interface DashboardTaskResource {
+  id: number;
+  title: string;
+  type: string;
+  url: string;
+}
+
 export interface DashboardTask {
+  id: string;
+  template_id?: string;
+  title: string;
+  description: string;
+  status: "pending" | "in-progress" | "completed";
+  progress: number;
+  assigned_date?: string | null;
+  due_date?: string | null;
+  completed_date?: string | null;
+  details?: unknown;
+  requirements?: unknown;
+  assigned_by_name?: string | null;
+  resources?: DashboardTaskResource[];
+}
+
+export interface DashboardTaskListItem {
   id: string;
   title: string;
   description: string;
-  type: TaskType;
-  status: TaskStatus;
-  assigned_by: string;
-  assigned_by_name: string; // From JOIN
-  assigned_date: string;
-  due_date: string | null;
-  completed_date?: string | null;
+  status: "pending" | "in-progress" | "completed";
   progress: number;
-  details: any; // JSONB en DB
-  created_at: string;
-  updated_at: string;
+  due_date?: string | null;
 }
 
 export interface TaskTemplate {

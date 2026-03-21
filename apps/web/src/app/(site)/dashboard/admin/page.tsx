@@ -44,7 +44,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <AdminStats />
+{/*         <AdminStats /> */}
 
         <div className="mb-8">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-1 border border-gray-200 inline-flex">
