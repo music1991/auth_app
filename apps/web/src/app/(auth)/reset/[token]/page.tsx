@@ -1,4 +1,4 @@
-import "server-only";
+
 import { redirect } from "next/navigation";
 
 import { findValidResetByToken } from "@/lib/forgot-password";

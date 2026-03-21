@@ -1,4 +1,3 @@
-import "server-only";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
