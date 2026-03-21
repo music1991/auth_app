@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { dashboardDb } from "@/lib/dashboard-db";
-import { formatUser } from "../dashboard/admin/users/route";
+import { API_BASE_URL, formatUser } from "../dashboard/admin/users/route";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
 
     let onlineIds: string[] = [];
     try {
-      const socketUrl = `http://localhost:4000/api/online-ids?t=${Date.now()}`;
+      const socketUrl = `${API_BASE_URL}/api/online-ids?t=${Date.now()}`;
 
    //   console.log("🚀 Intentando llamar a:", socketUrl);
 

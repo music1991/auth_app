@@ -1,11 +1,12 @@
 "use client";
+import { API_BASE_URL } from "@/app/api/dashboard/admin/users/route";
 import { useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 
 // 1. Exportamos la instancia del socket. 
 // Esto permite que el Admin u otros componentes importen 'socket' 
 // y usen la MISMA conexión sin crear duplicados.
-export const socket: Socket = io("http://localhost:4000", { 
+export const socket: Socket = io(API_BASE_URL, { 
   autoConnect: false,
   reconnection: true,
   reconnectionAttempts: 5,

@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { API_BASE_URL } from '../dashboard/admin/users/route';
+
 
 // Asegúrate de incluir el path completo /api/resources
-const NODE_BACKEND_URL = 'http://localhost:4000/api/resources';
+const NODE_BACKEND_URL = `${API_BASE_URL}/api/resources`;
 
 export async function GET() {
   try {

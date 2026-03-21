@@ -5,6 +5,13 @@ import { dashboardDb } from "@/lib/dashboard-db";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const isProd = process.env.NODE_ENV === 'production';
+
+// Si es producción usa la URL de Vercel, si no, usa localhost
+export const API_BASE_URL = isProd 
+  ? 'https://services-ergnpqr4s-sebastians-projects-8f6eb114.vercel.app/' 
+  : 'http://localhost:4000';
+
 const jsonResponse = (data: any, status = 200) => {
   return NextResponse.json(data, {
     status,
@@ -54,7 +61,9 @@ export async function GET() {
 
     try {
           
-      const socketUrl = `http://localhost:4000/api/online-ids?t=${Date.now()}`;
+
+
+const socketUrl = `${API_BASE_URL}/api/online-ids?t=${Date.now()}`;
 
       const socketRes = await fetch(socketUrl, {
         method: "GET",
