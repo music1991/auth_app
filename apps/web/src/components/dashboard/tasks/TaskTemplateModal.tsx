@@ -53,25 +53,40 @@ export default function TaskTemplateModal({
 
   // 1. Cargar recursos de la base de datos al abrir el modal
   useEffect(() => {
-    if (!open) return;
+  if (!open) return;
 
-    const fetchResources = async () => {
+  const fetchResources = async () => {
+    try {
+      // Importante: getAll() debe usar fetch("/api/resources") internamente
       const res = await resourceApi.getAll();
-      if (res.success) setDbResources(res.data);
-    };
-
-    fetchResources();
-
-    if (mode === "edit" && template) {
-      setForm({ ...template, requirements: template.requirements || [] });
-      // Si requirements ya tiene IDs, los marcamos como seleccionados
-      setSelectedDbIds(template.requirements.map(Number));
-    } else {
-      setForm(defaultForm);
-      setSelectedDbIds([]);
-      setPendingResources([]);
+      
+      if (res.success) {
+        setDbResources(res.data);
+      } else {
+        // Si el backend responde con error pero el fetch conectó
+        console.error("Error en recursos:", res.message, "URL:", res.api_url);
+      }
+    } catch (error) {
+      // Aquí verás el error que configuramos en el proxy (el API_BASE_URL)
+      console.error("❌ Fallo crítico al traer recursos:", error);
+      alert(`No se pudo conectar con el backend. Detalle: ${error}`);
     }
-  }, [open, mode, template]);
+  };
+
+  fetchResources();
+
+  if (mode === "edit" && template) {
+    // Aseguramos que requirements sea un array antes de mapear
+    const reqs = template.requirements || [];
+    setForm({ ...template, requirements: reqs });
+    setSelectedDbIds(reqs.map(Number));
+  } else {
+    setForm(defaultForm);
+    setSelectedDbIds([]);
+    setPendingResources([]);
+  }
+}, [open, mode, template]); // Agregué dependencias para evitar warnings de React
+
 
   if (!open) return null;
 
@@ -107,52 +122,52 @@ const handleSubmit = async (e: React.FormEvent) => {
   try {
     let newResourceIds: string[] = [];
 
-    // 1. Si hay PDF o Link nuevo, se guardan en la tabla 'resources' de Node
     if (pendingResources.length > 0) {
       newResourceIds = await Promise.all(
         pendingResources.map(async (res) => {
-          // El link se envía aquí; Node lo guardará en la DB y devolverá su ID
           const result = await resourceApi.create({
             title: res.title || (res.type === 'link' ? "Enlace externo" : "Documento"),
             type: res.type,
             file: res.file,
-            url: res.url, // Aquí viaja el link
+            url: res.url,
           });
 
-          if (!result.success) throw new Error(result.message);
+          // Si el backend respondió éxito: false
+          if (!result.success) {
+             throw new Error(result.message || "Error al crear recurso");
+          }
           
-          // Convertimos el ID a string para que coincida con el tipo de la interfaz
           return String(result.data.id); 
         })
       );
     }
 
-    // 2. Combinamos IDs seleccionados del Combo (convertidos a string) + IDs nuevos
     const selectedIdsStr = selectedDbIds.map(id => String(id));
     const finalResourceIds = Array.from(new Set([
       ...selectedIdsStr, 
       ...newResourceIds
     ])).filter(Boolean);
 
-    // 3. Payload final (Sin errores de tipo)
     const payload: TaskTemplatePayload = {
       title: form.title.trim(),
       description: form.description.trim(),
       type: form.type,
       estimatedHours: Number(form.estimatedHours),
-      requirements: finalResourceIds, // Ahora es string[] y TS estará feliz
+      requirements: finalResourceIds, 
     };
 
     await onSubmit(payload);
     onClose();
 
   } catch (error: any) {
-    console.error("❌ Error:", error);
-    alert(error.message || "Hubo un problema al procesar los recursos");
+    console.error("❌ Detalle del Error:", error);
+    // Aquí verás el mensaje que incluimos en el route.ts (con la API_URL)
+    alert(`Error: ${error.message}`);
   } finally {
     setIsUploading(false);
   }
 };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
