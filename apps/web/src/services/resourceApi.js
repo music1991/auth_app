@@ -1,6 +1,6 @@
 export const resourceApi = {
   getAll: async () => {
-    const res = await fetch("/api/resources");
+    const res = await fetch("/resources");
     return res.json();
   },
   
@@ -15,7 +15,7 @@ export const resourceApi = {
       formData.append('url', data.url); 
     }
 
-    const res = await fetch("/api/resources", {
+    const res = await fetch("/resources", {
       method: 'POST',
       body: formData,
     });
