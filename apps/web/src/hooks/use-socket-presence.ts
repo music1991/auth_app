@@ -25,8 +25,8 @@ function useSocketPresence(user: any) {
       return;
     }
 
-    console.log("llega", user)
-    console.log("llega variable", urlService)
+/*     console.log("llega", user)
+    console.log("llega variable", urlService) */
 
     const onConnect = () => {
         

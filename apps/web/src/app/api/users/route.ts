@@ -28,7 +28,7 @@ export async function GET(req: Request) {
 
     let onlineIds: string[] = [];
     try {
-      const socketUrl = `${urlService}/api/online-ids?t=${Date.now()}`;
+      const socketUrl = `${urlService}/online-ids?t=${Date.now()}`;
 
    //   console.log("🚀 Intentando llamar a:", socketUrl);
 
