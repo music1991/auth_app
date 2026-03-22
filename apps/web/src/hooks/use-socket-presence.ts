@@ -8,6 +8,7 @@ const urlService = process.env.NEXT_PUBLIC_SERVICES_URL;
 // Esto permite que el Admin u otros componentes importen 'socket' 
 // y usen la MISMA conexión sin crear duplicados.
 export const socket: Socket = io(urlService, { 
+  transports: ['websocket'],
   autoConnect: false,
   reconnection: true,
   reconnectionAttempts: 5,
@@ -25,6 +26,7 @@ function useSocketPresence(user: any) {
     }
 
     console.log("llega", user)
+    console.log("llega variable", urlService)
 
     const onConnect = () => {
         
