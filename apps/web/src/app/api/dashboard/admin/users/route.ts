@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { dashboardDb } from "@/lib/dashboard-db";
 
-const urlService = process.env.SERVICES_URL;
+const urlService = process.env.NEXT_PUBLIC_SERVICES_URL;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,10 +59,7 @@ export async function GET() {
     let onlineIds: string[] = [];
 
     try {
-          
-
-
-const socketUrl = `${urlService}/api/online-ids?t=${Date.now()}`;
+      const socketUrl = `${urlService}/api/online-ids?t=${Date.now()}`;
 
       const socketRes = await fetch(socketUrl, {
         method: "GET",
@@ -72,13 +69,9 @@ const socketUrl = `${urlService}/api/online-ids?t=${Date.now()}`;
         },
       });
 
-         
-
       if (socketRes.ok) {
-
-
         onlineIds = await socketRes.json();
-         console.log("llega 3 peticion", onlineIds)
+        console.log("llega 3 peticion", onlineIds)
       }
     } catch (e: any) {
       console.error("Socket presence error:", e.message);

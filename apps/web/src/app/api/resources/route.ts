@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const urlService = process.env.SERVICES_URL;
+const urlService = process.env.NEXT_PUBLIC_SERVICES_URL;
 
 // Asegúrate de incluir el path completo /api/resources
 const NODE_BACKEND_URL = `${urlService}/resources`;

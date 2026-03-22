@@ -14,7 +14,7 @@ const jsonResponse = (data: any, status = 200) => {
   });
 };
 
-const urlService = process.env.SERVICES_URL;
+const urlService = process.env.NEXT_PUBLIC_SERVICES_URL;
 
 export async function GET(req: Request) {
   try {

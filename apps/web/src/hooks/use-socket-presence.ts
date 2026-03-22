@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 
-const urlService = process.env.SERVICES_URL;
+const urlService = process.env.NEXT_PUBLIC_SERVICES_URL;
 // 1. Exportamos la instancia del socket. 
 // Esto permite que el Admin u otros componentes importen 'socket' 
 // y usen la MISMA conexión sin crear duplicados.
