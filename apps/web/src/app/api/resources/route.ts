@@ -32,7 +32,7 @@ export async function GET() {
 export async function POST(request: Request) {
   // Asegúrate de que NODE_BACKEND_URL esté definida arriba o en el .env
   const API_URL = process.env.NODE_BACKEND_URL || "URL_NO_DEFINIDA";
-
+  console.log("URL RESOURCES", API_URL)
   try {
     const formData = await request.formData();
     const type = formData.get('type');
@@ -46,6 +46,8 @@ export async function POST(request: Request) {
       method: 'POST',
       body: formData,
     });
+
+    throw new Error('llega hasta aqui')
 
     // --- AQUÍ CAPTURAMOS EL 404 ---
     if (response.status === 404) {

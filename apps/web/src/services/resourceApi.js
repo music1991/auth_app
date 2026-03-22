@@ -1,6 +1,6 @@
 export const resourceApi = {
   getAll: async () => {
-    const res = await fetch("/resources");
+    const res = await fetch("/api/resources");
     return res.json();
   },
   create: async (data) => {
