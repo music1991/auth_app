@@ -22,8 +22,8 @@ export const formatUser = (u: any, onlineUsers: any[] = []) => {
   // Buscamos si existe algún objeto cuyo userId coincida con u.id
   const isOnline = onlineUsers.some(user => user.userId === u.id);
 
-  console.log("Carga onlineUsers (total):", onlineUsers.length);
-  console.log(`¿Usuario ${u.name} online?:`, isOnline);
+/*   console.log("Carga onlineUsers (total):", onlineUsers.length);
+  console.log(`¿Usuario ${u.name} online?:`, isOnline); */
 
   return {
     id: u.id,
@@ -59,7 +59,7 @@ export async function GET() {
     let onlineIds: string[] = [];
 
     try {
-      const socketUrl = `${urlService}/api/online-ids?t=${Date.now()}`;
+      const socketUrl = `${urlService}/online-ids?t=${Date.now()}`;
 
       const socketRes = await fetch(socketUrl, {
         method: "GET",
@@ -71,7 +71,10 @@ export async function GET() {
 
       if (socketRes.ok) {
         onlineIds = await socketRes.json();
-        console.log("llega 3 peticion", onlineIds)
+        console.log("llega a onlineIds", onlineIds)
+      }
+      else {
+        console.log("no llega a onlineIds")
       }
     } catch (e: any) {
       console.error("Socket presence error:", e.message);
