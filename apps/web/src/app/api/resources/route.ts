@@ -1,10 +1,9 @@
-import { API_BASE_URL } from '@/lib/constants';
 import { NextResponse } from 'next/server';
 
-
+const urlService = process.env.SERVICES_URL;
 
 // Asegúrate de incluir el path completo /api/resources
-const NODE_BACKEND_URL = `${API_BASE_URL}/resources`;
+const NODE_BACKEND_URL = `${urlService}/resources`;
 
 export async function GET() {
   try {
@@ -30,9 +29,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  // Asegúrate de que NODE_BACKEND_URL esté definida arriba o en el .env
-  const API_URL = process.env.NODE_BACKEND_URL || "URL_NO_DEFINIDA";
-  console.log("URL RESOURCES", API_URL)
+
   try {
     const formData = await request.formData();
     const type = formData.get('type');
@@ -42,7 +39,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: "Falta la URL" }, { status: 400 });
     }
 
-    const response = await fetch(API_URL, {
+    const response = await fetch(NODE_BACKEND_URL, {
       method: 'POST',
       body: formData,
     });
@@ -53,7 +50,7 @@ export async function POST(request: Request) {
     if (response.status === 404) {
       return NextResponse.json({
         success: false,
-        message: `El backend devolvió 404. La URL intentada fue: ${API_URL}`,
+        message: `El backend devolvió 404. La URL intentada fue: ${NODE_BACKEND_URL}`,
         status: 404
       }, { status: 404 });
     }
@@ -66,7 +63,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       success: false, 
       message: "Error de conexión o URL mal formada",
-      error_url: API_URL 
+      error_url: NODE_BACKEND_URL 
     }, { status: 500 });
   }
 }

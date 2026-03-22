@@ -1,13 +1,13 @@
 "use client";
 
-import { API_BASE_URL } from "@/lib/constants";
 import { useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 
+const urlService = process.env.SERVICES_URL;
 // 1. Exportamos la instancia del socket. 
 // Esto permite que el Admin u otros componentes importen 'socket' 
 // y usen la MISMA conexión sin crear duplicados.
-export const socket: Socket = io(API_BASE_URL, { 
+export const socket: Socket = io(urlService, { 
   autoConnect: false,
   reconnection: true,
   reconnectionAttempts: 5,

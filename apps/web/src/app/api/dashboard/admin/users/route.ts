@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { dashboardDb } from "@/lib/dashboard-db";
-import { API_BASE_URL } from "@/lib/constants";
+
+const urlService = process.env.SERVICES_URL;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,7 +62,7 @@ export async function GET() {
           
 
 
-const socketUrl = `${API_BASE_URL}/api/online-ids?t=${Date.now()}`;
+const socketUrl = `${urlService}/api/online-ids?t=${Date.now()}`;
 
       const socketRes = await fetch(socketUrl, {
         method: "GET",

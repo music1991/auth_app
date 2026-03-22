@@ -3,7 +3,6 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { dashboardDb } from "@/lib/dashboard-db";
 import { formatUser } from "../dashboard/admin/users/route";
-import { API_BASE_URL } from "@/lib/constants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +14,7 @@ const jsonResponse = (data: any, status = 200) => {
   });
 };
 
-
+const urlService = process.env.SERVICES_URL;
 
 export async function GET(req: Request) {
   try {
@@ -29,7 +28,7 @@ export async function GET(req: Request) {
 
     let onlineIds: string[] = [];
     try {
-      const socketUrl = `${API_BASE_URL}/api/online-ids?t=${Date.now()}`;
+      const socketUrl = `${urlService}/api/online-ids?t=${Date.now()}`;
 
    //   console.log("🚀 Intentando llamar a:", socketUrl);
 
