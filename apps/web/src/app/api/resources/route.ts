@@ -44,8 +44,6 @@ export async function POST(request: Request) {
       body: formData,
     });
 
-    throw new Error('llega hasta aqui')
-
     // --- AQUÍ CAPTURAMOS EL 404 ---
     if (response.status === 404) {
       return NextResponse.json({
