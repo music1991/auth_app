@@ -723,30 +723,6 @@ async createEvaluationTemplate(template: {
   return rows[0].id;
 },
 
-async updateEvaluationScoreByEmailAndForm(data: { 
-  email: string; 
-  score: number; 
-  googleFormId: string 
-}) {
-  const result = await sql`
-    UPDATE evaluations
-    SET
-      score = ${data.score},
-      status = 'completed',
-      completed_date = CURRENT_TIMESTAMP,
-      updated_at = CURRENT_TIMESTAMP
-    WHERE user_id = (SELECT id FROM users WHERE email = ${data.email} LIMIT 1)
-      AND template_id = (SELECT id FROM evaluation_templates WHERE google_form_id = ${data.googleFormId} LIMIT 1)
-      AND status != 'completed'
-    RETURNING id;
-  `;
-
-  return {
-    success: result.length > 0,
-    evaluationId: result.length > 0 ? result[0].id : null
-  };
-},
-
 
 async publishEvaluationTemplate(templateId: string) {
   await sql`
