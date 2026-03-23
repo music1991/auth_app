@@ -4,34 +4,28 @@ import { useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 
 const urlService = process.env.NEXT_PUBLIC_SERVICES_URL;
-// 1. Exportamos la instancia del socket. 
-// Esto permite que el Admin u otros componentes importen 'socket' 
-// y usen la MISMA conexión sin crear duplicados.
-export const socket: Socket = io(urlService, { 
-  transports: ['websocket'],
+const socketUrl = urlService?.replace('/api', '');
+
+console.log("🔗 Intentando conectar socket a:", socketUrl);
+export const socket: Socket = io(socketUrl, { 
+   path: "/socket.io/",
+  transports: ['polling', 'websocket'], 
   autoConnect: false,
   reconnection: true,
   reconnectionAttempts: 5,
-  reconnectionDelay: 1000,
+  reconnectionDelay: 2000,
+  withCredentials: true
 });
 
-/**
- * Hook interno para manejar la lógica de conexión
- */
 function useSocketPresence(user: any) {
   useEffect(() => {
-    if (!user) {
+    if (!user?.id) {
       if (socket.connected) socket.disconnect();
       return;
     }
 
-/*     console.log("llega", user)
-    console.log("llega variable", urlService) */
-
     const onConnect = () => {
-        
-      console.log("✅ Conectado al servidor de presencia");
-      // Enviamos la identidad apenas conectamos
+      console.log("✅ Socket conectado. Enviando login para:", user.name);
       socket.emit("user:login", {
         id: user.id,
         name: user.name,
@@ -39,38 +33,33 @@ function useSocketPresence(user: any) {
       });
     };
 
-    const onDisconnect = () => {
-      console.log("❌ Desconectado del servidor de presencia");
+    const onDisconnect = (reason: string) => {
+      console.log("❌ Socket desconectado. Motivo:", reason);
     };
 
-    // Escuchamos eventos de conexión para re-emitir el login si el server se cae y vuelve
+    const onConnectError = (err: any) => {
+      console.error("⚠️ Error de conexión Socket:", err.message);
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onConnectError);
 
-    // Si ya está conectado (por una navegación previa), emitimos directo
-    if (socket.connected) {
-      onConnect();
-    } else {
+    if (!socket.connected) {
       socket.connect();
+    } else {
+      onConnect();
     }
 
-    // Limpieza: Cuando el Layout se desmonta (Logout o cerrar pestaña)
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
-      socket.disconnect();
+      socket.off("connect_error", onConnectError);
     };
-  }, [user]);
+  }, [user?.id]);
 }
 
-/**
- * Componente que inyectas en tu SiteLayout
- */
 export default function PresencePing({ user }: { user: any }) {
-  // Activamos el hook de presencia
-
   useSocketPresence(user);
-
-  // No renderiza nada, funciona como un "agente" en segundo plano
   return null;
 }
