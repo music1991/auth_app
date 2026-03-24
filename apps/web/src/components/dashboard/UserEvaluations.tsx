@@ -1,6 +1,7 @@
-"use client";
+/* "use client";
 
 import { useState } from "react";
+import { startEvaluation } from "@/services/formServicesApi";
 
 interface Evaluation {
   id: string;
@@ -64,8 +65,8 @@ export default function UserEvaluations() {
     }
   };
 
-  const startEvaluation = (evaluationId: string) => {
-    alert(`Iniciando evaluación: ${evaluationId}`);
+  const handleUpdateStatusToStart = (evaluationId: string) => {
+   // startEvaluation(evaluationId)
   };
 
   return (
@@ -108,7 +109,7 @@ export default function UserEvaluations() {
             <div className="mt-4">
               {evaluation.status === "pending" && (
                 <button
-                  onClick={() => startEvaluation(evaluation.id)}
+                  onClick={() => handleUpdateStatusToStart(evaluation.id)}
                   className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded font-medium"
                 >
                   Realizar Evaluación
@@ -135,4 +136,4 @@ export default function UserEvaluations() {
       )}
     </div>
   );
-}
+} */

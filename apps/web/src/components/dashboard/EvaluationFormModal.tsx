@@ -7,44 +7,27 @@ interface EvaluationFormModalProps {
   onClose: () => void;
   title?: string;
   googleFormId?: string | null;
-  idEvaluation: string;
-}
-function buildGoogleFormEmbedUrl(
-  formId: string,
-  entryId: string,
-  value: string
-) {
-  return `https://docs.google.com/forms/d/e/${formId}/viewform?embedded=true&${entryId}=${encodeURIComponent(value)}`;
 }
 
-/* function buildGoogleFormViewUrl(
-  formId: string,
-  entryId: string,
-  value: string
-) {
-  return `https://docs.google.com/forms/d/e/${formId}/viewform?${entryId}=${encodeURIComponent(value)}`;
-} */
+function buildGoogleFormEmbedUrl(formId: string) {
+  return `https://docs.google.com/forms/d/e/${formId}/viewform?embedded=true`;
+}
+
+function buildGoogleFormViewUrl(formId: string) {
+  return `https://docs.google.com/forms/d/e/${formId}/viewform`;
+}
 
 export default function EvaluationFormModal({
   open,
   onClose,
   title,
   googleFormId,
-  idEvaluation
 }: EvaluationFormModalProps) {
   if (!open) return null;
 
   const hasForm = Boolean(googleFormId);
-
-const embedUrl = hasForm
-  ? buildGoogleFormEmbedUrl(
-      googleFormId!,
-      "entry.123456789", 
-      idEvaluation
-    )
-  : null;
-  
-  //const viewUrl = hasForm ? buildGoogleFormViewUrl(googleFormId!) : null;
+  const embedUrl = hasForm ? buildGoogleFormEmbedUrl(googleFormId!) : null;
+  const viewUrl = hasForm ? buildGoogleFormViewUrl(googleFormId!) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -103,6 +86,9 @@ const embedUrl = hasForm
                 src={embedUrl!}
                 title={title || "Formulario de evaluación"}
                 className="h-full w-full"
+                frameBorder="0"
+                marginHeight={0}
+                marginWidth={0}
               >
                 Cargando formulario...
               </iframe>

@@ -772,12 +772,6 @@ async getUserEvaluations(userId: string) {
     INNER JOIN evaluation_templates et ON et.id = e.template_id
     WHERE e.user_id = ${userId}
     ORDER BY
-      CASE e.status
-        WHEN 'in_progress' THEN 1
-        WHEN 'pending' THEN 2
-        WHEN 'completed' THEN 3
-        ELSE 4
-      END,
       e.due_date ASC,
       e.created_at DESC
   `;
@@ -799,7 +793,7 @@ async getUserEvaluations(userId: string) {
   }));
 },
 
-async startEvaluation(evaluationId: string, userId: string) {
+/* async startEvaluation(evaluationId: string, userId: string) {
   await sql`
     UPDATE evaluations
     SET
@@ -808,7 +802,7 @@ async startEvaluation(evaluationId: string, userId: string) {
     WHERE id = ${evaluationId}
       AND user_id = ${userId}
   `;
-},
+}, */
 
 async submitEvaluation(data: {
   evaluationId: string;
@@ -844,7 +838,6 @@ async assignEvaluationTemplateToUsers(data: {
       FROM evaluations
       WHERE template_id = ${data.templateId}
         AND user_id = ${userId}
-        AND status IN ('pending', 'in_progress')
       LIMIT 1
     `;
 
@@ -866,7 +859,7 @@ async assignEvaluationTemplateToUsers(data: {
         ${data.templateId},
         ${userId},
         ${data.assignedBy},
-        'pending',
+        0,
         CURRENT_TIMESTAMP,
         ${data.dueDate ?? null},
         0,

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { dashboardDb } from "@/lib/dashboard-db";
 
+const urlServer = process.env.NEXT_PUBLIC_SERVICES_URL; 
+
 export async function GET(_request: NextRequest) {
   try {
     const session = await getSession();
@@ -14,16 +16,28 @@ export async function GET(_request: NextRequest) {
     const evaluations = await dashboardDb.getUserEvaluations(userId);
 
     return NextResponse.json({ evaluations });
-  } catch (error) {
-    console.error("Error fetching user evaluations:", error); 
+  } catch (error: any) {
+    // 1. Log detallado en la terminal (importante para Neon/Postgres)
+    console.error("❌ ERROR EN GET USER EVALUATIONS:");
+    console.error("Mensaje:", error.message);
+    console.error("Código DB:", error.code); // Código de error de Postgres (ej: 42P01)
+    console.error("Stack:", error.stack);
+
+    // 2. Respuesta con detalles para el Frontend (solo en desarrollo)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Error interno al obtener evaluaciones", 
+        message: error.message,
+        code: error.code,
+        // Esto te dirá si el problema es la query o la conexión
+        hint: error.hint || "Verifica que la función getUserEvaluations exista en dashboard-db"
+      }, 
       { status: 500 }
     );
   }
 }
 
-export async function POST(request: NextRequest) {
+/* export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
 
@@ -34,11 +48,6 @@ export async function POST(request: NextRequest) {
     const userId = session.userId;
     const body = await request.json();
     const { action, data } = body;
-
-    if (action === "start") {
-      await dashboardDb.startEvaluation(data.evaluationId, userId);
-      return NextResponse.json({ success: true });
-    }
 
     if (action === "submit") {
       await dashboardDb.submitEvaluation({
@@ -65,4 +74,20 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+} */
+
+export async function PATCH(request: NextRequest) {
+  const { evaluationId, status } = await request.json();
+  
+  // URL de tu servidor Node/Express desde el .env
+
+
+  const response = await fetch(`${urlServer}/form/`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ evaluationId, status })
+  });
+
+  const data = await response.json();
+  return NextResponse.json(data, { status: response.status });
 }
