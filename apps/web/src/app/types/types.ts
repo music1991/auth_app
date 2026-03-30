@@ -106,7 +106,8 @@ export interface WorkSession {
 // ==========================================
 
 export type EvaluationType = "environment" | "performance" | "skills";
-export type EvaluationStatus = "pending" | "completed" | "expired" | "active";
+export type EvaluationTemplateStatus = "draft" | "active" | "completed";
+export type EvaluationAssignmentStatus = "pending" | "completed" | "expired";
 
 export interface Evaluation {
   id: string;
@@ -114,7 +115,7 @@ export interface Evaluation {
   title: string;       // From JOIN Template
   description: string; // From JOIN Template
   type: EvaluationType;
-  status: EvaluationStatus;
+  status: EvaluationAssignmentStatus;
   assigned_date: string;
   due_date: string | null;
   completed_date: string | null;
@@ -130,7 +131,7 @@ export interface EvaluationTemplate {
   title: string;
   description: string;
   type: EvaluationType;
-  status: EvaluationStatus;
+  status: EvaluationTemplateStatus;
   created_by: string;
   created_by_name: string;
   assigned_to: string[]; // IDs de usuarios (JSONB array)
@@ -170,4 +171,43 @@ export interface ProductivityMetric {
   total_work_time: number;
   productivity_score: number;
   created_at: string;
+}
+
+
+
+export type Mode = "true" | "false";
+
+export interface EvaluationTemplateItem {
+  id: string;
+  title: string;
+  description: string;
+  type: EvaluationType;
+  status: EvaluationTemplateStatus;
+  createdDate: string;
+  dueDate: string | null;
+  assignedUsers: number;
+  responses: number;
+  completionRate: number;
+  online: boolean;
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "user" | "admin";
+}
+
+export interface NewEvaluationFormData {
+  title: string;
+  description: string;
+  type: EvaluationType;
+  dueDate: string;
+  google_form_id: string;
+  online: boolean;
+}
+
+export interface AssignmentUser extends AdminUser {
+  assigned: boolean;
+  selected: boolean;
 }

@@ -1,68 +1,56 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { AdminUser, AssignmentUser, EvaluationTemplateItem, NewEvaluationFormData } from "@/app/types/types";
+import { INITIAL_EVALUATION_FORM } from "@/lib/constants";
+import { useEffect, useMemo, useState } from "react";
+import { EvaluationCard } from "./EvaluationCard";
+import { CreateEvaluationForm } from "./CreateEvaluationForm";
+import { ManageAssignmentsModal } from "./ManageAssignmentsModal";
 
-// --- TIPOS ---
-type EvaluationType = "environment" | "performance" | "skills";
-type EvaluationStatus = "draft" | "active" | "completed";
 
-interface EvaluationTemplateItem {
-  id: string;
-  title: string;
-  description: string;
-  type: EvaluationType;
-  status: EvaluationStatus;
-  createdDate: string;
-  dueDate: string | null;
-  assignedUsers: number;
-  responses: number;
-  completionRate: number;
-}
+function buildAssignmentUsers(
+  users: AdminUser[],
+  assignedUsers: AdminUser[],
+  selectedUserIds: string[]
+): AssignmentUser[] {
+  const assignedIds = new Set(assignedUsers.map((user) => user.id));
 
-interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: "user" | "admin";
+  return users.map((user) => ({
+    ...user,
+    assigned: assignedIds.has(user.id),
+    selected: selectedUserIds.includes(user.id),
+  }));
 }
 
 export default function AdminEvaluationManager() {
-  // --- ESTADOS ---
   const [evaluations, setEvaluations] = useState<EvaluationTemplateItem[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  
+
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  
+  const [showAssignmentsModal, setShowAssignmentsModal] = useState(false);
+
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<string | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [assignDueDate, setAssignDueDate] = useState("");
 
-    const extractGoogleFormId = (url: string) => {
-  // Regex para capturar el ID entre /d/ o /d/e/ y el siguiente slash
-  const regex = /\/d\/(?:e\/)?([a-zA-Z0-9_-]{40,})\//;
-  const match = url.match(regex);
-  return match ? match[1] : url; // Si no hay match, devuelve lo que el usuario pegó (por si ya era el ID)
-};
+  const [assignedUsers, setAssignedUsers] = useState<AdminUser[]>([]);
+  const [assignedLoading, setAssignedLoading] = useState(false);
 
-  const [newEvaluation, setNewEvaluation] = useState({
-    title: "",
-    description: "",
-    type: "environment" as EvaluationType,
-    dueDate: "",
-    google_form_id: ""
-  });
+  const [newEvaluation, setNewEvaluation] =
+    useState<NewEvaluationFormData>(INITIAL_EVALUATION_FORM);
 
   useEffect(() => {
     loadTemplates();
   }, []);
 
-  // --- PETICIONES API ---
+  const assignmentUsers = useMemo(() => {
+    return buildAssignmentUsers(users, assignedUsers, selectedUserIds);
+  }, [users, assignedUsers, selectedUserIds]);
 
-  // 1. Cargar Plantillas (GET a /evaluation-templates)
   const loadTemplates = async () => {
     try {
       setLoading(true);
@@ -76,13 +64,16 @@ export default function AdminEvaluationManager() {
     }
   };
 
-  // 2. Cargar Usuarios (GET a /users)
   const loadUsers = async () => {
     try {
       setUsersLoading(true);
       const response = await fetch("/api/dashboard/admin/users");
       const data = await response.json();
-      const onlyUsers = Array.isArray(data) ? data.filter((u) => u.role === "user") : [];
+
+      const onlyUsers = Array.isArray(data)
+        ? data.filter((user: AdminUser) => user.role === "user")
+        : [];
+
       setUsers(onlyUsers);
     } catch (error) {
       console.error("Error cargando usuarios");
@@ -91,19 +82,72 @@ export default function AdminEvaluationManager() {
     }
   };
 
-  // 3. Crear Plantilla (POST a /evaluation-templates)
+  const loadAssignedUsers = async (evaluationId: string) => {
+    try {
+      setAssignedLoading(true);
+      const res = await fetch(`/api/dashboard/admin/evaluations/?templateId=${evaluationId}`);
+      const data = await res.json();
+      setAssignedUsers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error cargando asignados");
+      setAssignedUsers([]);
+    } finally {
+      setAssignedLoading(false);
+    }
+  };
+
+  const updateNewEvaluation = (patch: Partial<NewEvaluationFormData>) => {
+    setNewEvaluation((prev) => ({ ...prev, ...patch }));
+  };
+
+  const resetCreateForm = () => {
+    setNewEvaluation(INITIAL_EVALUATION_FORM);
+    setShowCreateForm(false);
+  };
+
+  const openAssignmentsModal = async (
+    evaluationId: string,
+    evaluationDueDate: string | null = null
+  ) => {
+    setSelectedEvaluationId(evaluationId);
+    setSelectedUserIds([]);
+    setAssignedUsers([]);
+
+    if (evaluationDueDate !== null) setAssignDueDate(evaluationDueDate);
+    else setAssignDueDate("");
+
+    setShowAssignmentsModal(true);
+
+    await Promise.all([
+      loadUsers(),
+      loadAssignedUsers(evaluationId),
+    ]);
+  };
+
+  const closeAssignmentsModal = () => {
+    setShowAssignmentsModal(false);
+    setSelectedEvaluationId(null);
+    setSelectedUserIds([]);
+    setAssignDueDate("");
+    setAssignedUsers([]);
+  };
+
   const createTemplate = async () => {
     try {
       setSubmitting(true);
+
       const response = await fetch("/api/dashboard/admin/evaluation-templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newEvaluation, dueDate: newEvaluation.dueDate || null }),
+        body: JSON.stringify({
+          ...newEvaluation,
+          dueDate: newEvaluation.dueDate || null,
+        }),
       });
+
       if (!response.ok) throw new Error();
-      
-      setShowCreateForm(false);
-      setNewEvaluation({ title: "", description: "", type: "environment", dueDate: "", google_form_id: "" });
+
+      resetCreateForm();
       await loadTemplates();
     } catch (error) {
       alert("Error al crear plantilla");
@@ -112,16 +156,18 @@ export default function AdminEvaluationManager() {
     }
   };
 
-  // 4. Publicar Plantilla (PUT a /evaluation-templates)
   const publishTemplate = async (templateId: string) => {
     try {
       setSubmitting(true);
+
       const response = await fetch("/api/dashboard/admin/evaluation-templates", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ templateId }),
       });
+
       if (!response.ok) throw new Error();
+
       await loadTemplates();
     } catch (error) {
       alert("Error al publicar");
@@ -130,23 +176,30 @@ export default function AdminEvaluationManager() {
     }
   };
 
-  // 5. Asignar Evaluación (POST a /evaluations)
   const assignEvaluation = async () => {
     if (!selectedEvaluationId || selectedUserIds.length === 0) return;
+
     try {
       setSubmitting(true);
+
       const response = await fetch("/api/dashboard/admin/evaluations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          templateId: selectedEvaluationId, 
-          userIds: selectedUserIds, 
-          dueDate: assignDueDate || null 
+        body: JSON.stringify({
+          templateId: selectedEvaluationId,
+          userIds: selectedUserIds,
+          dueDate: assignDueDate || null,
         }),
       });
+
       if (!response.ok) throw new Error();
-      setShowAssignModal(false);
-      await loadTemplates(); // Recargamos para ver los nuevos "assignedUsers"
+
+      setSelectedUserIds([]);
+
+      await Promise.all([
+        loadAssignedUsers(selectedEvaluationId),
+        loadTemplates(),
+      ]);
     } catch (error) {
       alert("Error al asignar");
     } finally {
@@ -154,23 +207,46 @@ export default function AdminEvaluationManager() {
     }
   };
 
-  // --- HELPERS ---
-  const extractId = (url: string) => {
-    const match = url.match(/\/d\/(?:e\/)?([a-zA-Z0-9_-]{40,})\//);
-    return match ? match[1] : url;
+  const unassignUser = async (userId: string) => {
+    const confirmDelete = confirm("¿Remover este usuario?");
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch("/api/dashboard/admin/evaluations", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          templateId: selectedEvaluationId,
+          userId,
+        }),
+      });
+
+      if (!res.ok) throw new Error();
+
+      setAssignedUsers((prev) => prev.filter((u) => u.id !== userId));
+      setSelectedUserIds((prev) => prev.filter((id) => id !== userId));
+
+      await loadTemplates();
+    } catch (err) {
+      alert("Error al desasignar");
+    }
   };
 
   const toggleUser = (id: string) => {
-    setSelectedUserIds(p => p.includes(id) ? p.filter(i => i !== id) : [...p, id]);
+    setSelectedUserIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
   };
 
-  if (loading) return <div className="p-10 text-center text-gray-400">Cargando panel...</div>;
+  if (loading) {
+    return <div className="p-10 text-center text-gray-400">Cargando panel...</div>;
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
-      {/* HEADER */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Gestor de Evaluaciones</h2>
+
         <button
           onClick={() => setShowCreateForm(true)}
           className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-500 transition-colors"
@@ -179,151 +255,40 @@ export default function AdminEvaluationManager() {
         </button>
       </div>
 
-      {/* FORMULARIO CREAR */}
-      {showCreateForm && (
-        <div className="bg-white border rounded-xl p-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
-          <h3 className="text-lg font-bold mb-4">Configurar Evaluación</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input 
-              type="text" placeholder="Título" 
-              className="border p-2.5 rounded-lg" 
-              value={newEvaluation.title}
-              onChange={e => setNewEvaluation({...newEvaluation, title: e.target.value})}
-            />
-            <select 
-              className="border p-2.5 rounded-lg" 
-              value={newEvaluation.type}
-              onChange={e => setNewEvaluation({...newEvaluation, type: e.target.value as EvaluationType})}
-            >
-              <option value="environment">Clima Laboral</option>
-              <option value="performance">Desempeño</option>
-              <option value="skills">Skills</option>
-            </select>
-            <textarea 
-              placeholder="Descripción" 
-              className="border p-2.5 rounded-lg md:col-span-2 h-20"
-              value={newEvaluation.description}
-              onChange={e => setNewEvaluation({...newEvaluation, description: e.target.value})}
-            />
-              <div className="flex flex-col gap-1">
-                 <div className="flex items-center justify-between">
-    <label className="text-sm font-medium text-gray-700">ID del Formulario de Google</label>
-    <a 
-      href="https://forms.new" 
-      target="_blank" 
-      rel="noopener noreferrer"
-      className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded-full border border-blue-200 transition-colors flex items-center gap-1"
-    >
-      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-      </svg>
-      Crear nuevo formulario
-    </a>
-  </div>
-              <input
-                type="text"
-                placeholder="ID de Google Form (ej: 1FAIpQLSf...)"
-                className="rounded-md border p-2 border-blue-300 focus:ring-2 focus:ring-blue-500"
-                value={newEvaluation.google_form_id}
-                onChange={(e) => {
-                    const rawValue = e.target.value;
-                    const cleanedId = extractGoogleFormId(rawValue);
-                    setNewEvaluation({ ...newEvaluation, google_form_id: cleanedId });
-                  }}
-              />
-              <span className="text-[10px] text-gray-500 ml-1">
-                Copia el ID largo que aparece en la URL de tu formulario.
-              </span>
-            </div>
-            <input 
-              type="date" 
-              className="border p-2.5 rounded-lg"
-              value={newEvaluation.dueDate}
-              onChange={e => setNewEvaluation({...newEvaluation, dueDate: e.target.value})}
-            />
-          </div>
-          <div className="mt-6 flex justify-end gap-3 border-t pt-4">
-            <button onClick={() => setShowCreateForm(false)} className="text-gray-500 px-4 py-2 hover:bg-gray-100 rounded-lg">Cancelar</button>
-            <button 
-              onClick={createTemplate} 
-              disabled={submitting || !newEvaluation.title}
-              className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold disabled:opacity-50"
-            >
-              {submitting ? "Guardando..." : "Crear"}
-            </button>
-          </div>
-        </div>
-      )}
+      <CreateEvaluationForm
+        open={showCreateForm}
+        newEvaluation={newEvaluation}
+        submitting={submitting}
+        onClose={resetCreateForm}
+        onChange={updateNewEvaluation}
+        onSubmit={createTemplate}
+      />
 
-      {/* GRID DE CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {evaluations.map(ev => (
-          <div key={ev.id} className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-start mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{ev.type}</span>
-                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${ev.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}`}>{ev.status}</span>
-              </div>
-              <h4 className="font-bold text-gray-900 mb-1">{ev.title}</h4>
-              <p className="text-xs text-gray-500 line-clamp-2 mb-4">{ev.description}</p>
-              
-              <div className="flex justify-between border-t border-gray-50 pt-3 mb-4 text-center">
-                <div><p className="text-[10px] text-gray-400">Asignados</p><p className="font-bold">{ev.assignedUsers}</p></div>
-                <div><p className="text-[10px] text-gray-400">Respuestas</p><p className="font-bold">{ev.responses}</p></div>
-                <div><p className="text-[10px] text-gray-400">Progreso</p><p className="font-bold">{ev.completionRate}%</p></div>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              {ev.status === "draft" && (
-                <button onClick={() => publishTemplate(ev.id)} className="flex-1 bg-green-600 text-white text-xs font-bold py-2 rounded-lg hover:bg-green-500">Publicar</button>
-              )}
-              <button 
-                onClick={() => { setSelectedEvaluationId(ev.id); setShowAssignModal(true); loadUsers(); }} 
-                className="flex-1 border text-gray-700 text-xs font-bold py-2 rounded-lg hover:bg-gray-50"
-              >
-                Asignar
-              </button>
-            </div>
-          </div>
+        {evaluations.map((evaluation) => (
+          <EvaluationCard
+            key={evaluation.id}
+            evaluation={evaluation}
+            onPublish={publishTemplate}
+            onManageAssignments={openAssignmentsModal}
+          />
         ))}
       </div>
 
-      {/* MODAL ASIGNAR */}
-      {showAssignModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
-            <h3 className="text-xl font-bold mb-4">Enviar Evaluación</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase">Fecha Límite</label>
-                <input type="date" value={assignDueDate} onChange={e => setAssignDueDate(e.target.value)} className="w-full border rounded-lg p-2 mt-1 outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase">Seleccionar Usuarios ({selectedUserIds.length})</label>
-                <div className="border rounded-lg mt-1 h-60 overflow-y-auto divide-y">
-                  {usersLoading ? <p className="p-4 text-center text-xs">Cargando...</p> : users.map(u => (
-                    <div key={u.id} onClick={() => toggleUser(u.id)} className="flex items-center gap-3 p-3 hover:bg-indigo-50 cursor-pointer transition-colors">
-                      <input type="checkbox" checked={selectedUserIds.includes(u.id)} readOnly className="rounded border-gray-300 text-indigo-600" />
-                      <div><p className="text-sm font-bold text-gray-800">{u.name}</p><p className="text-[10px] text-gray-500">{u.email}</p></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setShowAssignModal(false)} className="text-gray-500 px-4 py-2 hover:bg-gray-100 rounded-lg">Cerrar</button>
-              <button 
-                onClick={assignEvaluation} 
-                disabled={submitting || selectedUserIds.length === 0} 
-                className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold disabled:opacity-50"
-              >
-                {submitting ? "Asginando..." : "Asignar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ManageAssignmentsModal
+        open={showAssignmentsModal}
+        users={assignmentUsers}
+        usersLoading={usersLoading}
+        assignedLoading={assignedLoading}
+        selectedUserIds={selectedUserIds}
+        assignDueDate={assignDueDate}
+        submitting={submitting}
+        onClose={closeAssignmentsModal}
+        onToggleUser={toggleUser}
+        onDueDateChange={setAssignDueDate}
+        onAssign={assignEvaluation}
+        onUnassign={unassignUser}
+      />
     </div>
   );
 }

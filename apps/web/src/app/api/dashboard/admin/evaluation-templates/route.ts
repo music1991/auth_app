@@ -22,12 +22,26 @@ export async function GET() {
 
     const evaluations = await dashboardDb.getEvaluationTemplatesWithStats();
     return NextResponse.json({ evaluations });
-  } catch (error) {
-    console.error("Error fetching evaluations:", error);
-    return errorResponse("Internal server error");
+ } catch (error: any) {
+    // 1. Log detallado en la terminal (importante para Neon/Postgres)
+    console.error("❌ ERROR EN GET USER EVALUATIONS:");
+    console.error("Mensaje:", error.message);
+    console.error("Código DB:", error.code); // Código de error de Postgres (ej: 42P01)
+    console.error("Stack:", error.stack);
+
+    // 2. Respuesta con detalles para el Frontend (solo en desarrollo)
+    return NextResponse.json(
+      { 
+        error: "Error interno al obtener evaluaciones", 
+        message: error.message,
+        code: error.code,
+        // Esto te dirá si el problema es la query o la conexión
+        hint: error.hint || "Verifica que la función getUserEvaluations exista en dashboard-db"
+      }, 
+      { status: 500 }
+    );
   }
 }
-
 // POST: Crear la evaluación
 export async function POST(request: NextRequest) {
   try {
@@ -44,6 +58,7 @@ export async function POST(request: NextRequest) {
       dueDate: data.dueDate,
       googleFormId: data.google_form_id,
       createdBy: session.userId,
+      online: data.online
     });
 
     return NextResponse.json({ success: true, templateId }, { status: 201 });

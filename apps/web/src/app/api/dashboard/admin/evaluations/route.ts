@@ -40,3 +40,66 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// =========================
+// GET: Obtener usuarios asignados a un template
+// =========================
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session || session.role !== "admin") return errorResponse("Unauthorized", 401);
+
+    const { searchParams } = new URL(request.url);
+    const templateId = searchParams.get("templateId");
+
+    if (!templateId) return errorResponse("templateId es requerido", 400);
+
+    const users = await dashboardDb.getAssignedUsersByTemplate(templateId);
+
+    // Formateo uniforme
+    const formatted = users.map(u => ({
+      id: u.id,
+      evaluationId: u.evaluationId,
+      name: u.name,
+      email: u.email,
+      isCompleted: !!u.isCompleted
+    }));
+
+    return NextResponse.json(formatted);
+
+  } catch (error: any) {
+    console.error("❌ ERROR GET assigned users:", error.message);
+    return errorResponse(error.message);
+  }
+}
+
+// =========================
+// PUT: Desasignar usuario de una evaluación
+// =========================
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session || session.role !== "admin") return errorResponse("Unauthorized", 401);
+
+    const { templateId, userId } = await request.json();
+
+    if (!templateId || !userId) {
+      return errorResponse("templateId y userId son requeridos", 400);
+    }
+
+    const deleted = await dashboardDb.unassignUserFromEvaluation(templateId, userId);
+
+    if (!deleted) {
+      return errorResponse(
+        "No se pudo desasignar (quizás ya completó la evaluación)", 
+        400
+      );
+    }
+
+    return NextResponse.json({ success: true });
+
+  } catch (error: any) {
+    console.error("❌ ERROR PUT unassign user:", error.message);
+    return errorResponse(error.message);
+  }
+}

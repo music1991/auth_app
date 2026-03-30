@@ -11,10 +11,13 @@ import {
   FileText,
   Loader2,
   PlayCircle,
-  Target,
 } from "lucide-react";
 import EvaluationFormModal from "./dashboard/EvaluationFormModal";
 import { finishEvaluation, startEvaluation } from "@/services/formServicesApi";
+
+import { formatDateShort } from "@/lib/utils";
+import { EVALUATION_TYPE_LABELS } from "@/lib/constants";
+import { EvaluationType } from "@/app/types/types";
 
 type EvaluationStatus = 0 | 1 | 2 | 3;
 
@@ -31,18 +34,58 @@ interface UserEvaluation {
   description?: string;
   status?: EvaluationStatus | null;
   assigned_date?: string;
-  due_date?: string;
+  dueDate?: string;
   started_at?: string | null;
   submitted_at?: string | null;
-  score?: number | null;
+  score: number | null;
   max_score?: number | null;
   details?: EvaluationDetails | string | null;
   assigned_by_name?: string | null;
   google_form_id?: string | null;
+  type: string;
+  online: boolean;
+}
+
+interface StatusConfig {
+  label: string;
+  icon: typeof AlertCircle;
+  badge: string;
+  dot: string;
+}
+
+/* const formatDateShort = (date: string | null | undefined) => {
+  if (!date) return "";
+  const cleanDate = date.replace(/"/g, '').trim();
+  const newDate = new Date(cleanDate);
+
+  if (isNaN(newDate.getTime())) {
+    return "Fecha inválida";
+  }
+
+  return newDate.toLocaleDateString('es-ES');
+}; */
+
+function isEvaluationExpired(dueDate?: string | null) {
+  if (!dueDate) return false;
+
+  const cleanDate = dueDate.replace(/"/g, '').trim();
+  const due = new Date(cleanDate);
+  const today = new Date();
+
+  if (isNaN(due.getTime())) return false;
+
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+
+  console.log("Hoy:", today.toDateString()); //controlar la fecha con la q guarda..
+  console.log("Vence:", due.toDateString());
+
+  return today > due;
 }
 
 function parseJson<T>(value: T | string | null | undefined, fallback: T): T {
   if (!value) return fallback;
+
   if (typeof value === "string") {
     try {
       return JSON.parse(value) as T;
@@ -50,12 +93,11 @@ function parseJson<T>(value: T | string | null | undefined, fallback: T): T {
       return fallback;
     }
   }
+
   return value;
 }
 
-function parseDetails(
-  details: UserEvaluation["details"]
-): EvaluationDetails {
+function parseDetails(details: UserEvaluation["details"]): EvaluationDetails {
   return parseJson<EvaluationDetails>(details, {});
 }
 
@@ -67,7 +109,7 @@ function normalizeStatus(status?: number | null): EvaluationStatus {
   return 0;
 }
 
-function getStatusConfig(status: EvaluationStatus) {
+function getStatusConfig(status: EvaluationStatus): StatusConfig {
   switch (status) {
     case 0:
       return {
@@ -78,7 +120,7 @@ function getStatusConfig(status: EvaluationStatus) {
       };
     case 1:
       return {
-        label: "Disponible",
+        label: "Comenzada",
         icon: ClipboardCheck,
         badge: "bg-violet-100 text-violet-700 border-violet-200",
         dot: "bg-violet-500",
@@ -107,11 +149,430 @@ function getStatusConfig(status: EvaluationStatus) {
   }
 }
 
-function formatDate(date?: string | null) {
-  if (!date) return "—";
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return "—";
-  return parsed.toLocaleDateString();
+
+function getEvaluationScore(evaluation: UserEvaluation) {
+  if (evaluation.score != null && evaluation.max_score != null) {
+    return `${evaluation.score}/${evaluation.max_score}`;
+  }
+
+  if (evaluation.score != null) {
+    return `${evaluation.score}`;
+  }
+
+  return "—";
+}
+
+function canStartEvaluation(status: EvaluationStatus) {
+  return status === 0 || status === 1;
+}
+
+function SummaryStatCard({
+  title,
+  value,
+  className,
+}: {
+  title: string;
+  value: number;
+  className: string;
+}) {
+  return (
+    <div className={className}>
+      <p className="text-xs font-medium">{title}</p>
+      <p className="mt-1 text-xl font-bold">{value}</p>
+    </div>
+  );
+}
+
+function EvaluationsListItem({
+  evaluation,
+  isSelected,
+  onSelect,
+}: {
+  evaluation: UserEvaluation;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+}) {
+  const status = normalizeStatus(evaluation.status);
+  const statusConfig = getStatusConfig(status);
+  const StatusIcon = statusConfig.icon;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(evaluation.id)}
+      className={`w-full rounded-2xl border p-4 text-left transition-all ${isSelected
+        ? "border-green-300 bg-white shadow-sm ring-2 ring-green-500/20"
+        : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+        }`}
+    >
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-gray-900">{evaluation.title}</p>
+          <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+            {evaluation.description || "Sin descripción"}
+          </p>
+        </div>
+
+        <ChevronRight
+          size={18}
+          className={isSelected ? "text-green-600" : "text-gray-400"}
+        />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span
+          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${statusConfig.badge}`}
+        >
+          <StatusIcon size={14} />
+          {statusConfig.label}
+        </span>
+
+        <span className="text-xs font-medium text-gray-500">
+          {getEvaluationScore(evaluation) === "—"
+            ? "Sin resultado"
+            : getEvaluationScore(evaluation)}
+        </span>
+      </div>
+    </button>
+  );
+}
+
+function EmptyEvaluationsState() {
+  return (
+    <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">
+      No tienes evaluaciones asignadas todavía.
+    </div>
+  );
+}
+
+function EmptySelectedEvaluationState() {
+  return (
+    <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-center text-gray-500">
+      Selecciona una evaluación para ver sus detalles.
+    </div>
+  );
+}
+
+function DetailMetricCard({
+  icon,
+  title,
+  value,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  value: string | null | number;
+}) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+      <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+        {icon}
+        {title}
+      </div>
+      <p className="text-sm text-gray-900">{value}</p>
+    </div>
+  );
+}
+
+function DetailDateItem({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null;
+}) {
+
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+        {label}
+      </p>
+      <p className="mt-1 text-sm text-gray-900">{formatDateShort(value!)}</p>
+    </div>
+  );
+}
+
+function EvaluationDetailHeader({
+  evaluation,
+  statusConfig,
+}: {
+  evaluation: UserEvaluation;
+  statusConfig: StatusConfig;
+}) {
+  const StatusIcon = statusConfig.icon;
+
+  return (
+    <div className="border-b border-gray-100 pb-5">
+      <div>
+        <div className="mb-2 flex items-center gap-2">
+          <span className={`h-2.5 w-2.5 rounded-full ${statusConfig.dot}`} />
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${statusConfig.badge}`}
+          >
+            <StatusIcon size={14} />
+            {statusConfig.label}
+          </span>
+        </div>
+
+        <h3 className="text-2xl font-semibold text-gray-900">{evaluation.title}</h3>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
+          {evaluation.description || "Sin descripción"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function EvaluationDetailMetrics({
+  evaluation,
+  details,
+}: {
+  evaluation: UserEvaluation;
+  details: EvaluationDetails;
+}) {
+
+  return (
+
+
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <DetailMetricCard
+        icon={<Clock3 size={16} className="text-violet-600" />}
+        title="Duración"
+        value={details.durationMinutes ? `${details.durationMinutes} min` : "—"}
+      />
+
+      <DetailMetricCard
+        icon={<FileText size={16} className="text-amber-600" />}
+        title="Tipo"
+        value={EVALUATION_TYPE_LABELS[evaluation.type as EvaluationType] || "-"}
+      />
+
+      <DetailMetricCard
+        icon={<CheckCircle2 size={16} className="text-emerald-600" />}
+        title="Resultado"
+        value={evaluation.status === 3 ? evaluation.score : "-"}
+      />
+    </div>
+  );
+}
+
+function EvaluationDetailInstructions({
+  instructions,
+}: {
+  instructions?: string;
+}) {
+  if (!instructions) return null;
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+      <h4 className="mb-2 font-medium text-gray-900">Instrucciones</h4>
+      <p className="text-sm leading-6 text-gray-600">{instructions}</p>
+    </div>
+  );
+}
+
+function EvaluationDetailActions({
+  canStart,
+  starting,
+  onStart,
+}: {
+  canStart: boolean;
+  starting: boolean;
+  onStart: () => void;
+}) {
+  if (!canStart) return null;
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      <button
+        type="button"
+        onClick={onStart}
+        disabled={starting}
+        className="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-600 disabled:opacity-60"
+      >
+        {starting ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <PlayCircle size={16} />
+        )}
+        {starting ? "Iniciando..." : "Iniciar evaluación"}
+      </button>
+    </div>
+  );
+}
+
+function EvaluationDetailDates({
+  evaluation,
+}: {
+  evaluation: UserEvaluation;
+}) {
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <DetailDateItem label="Fecha límite" value={evaluation.dueDate} />
+        <DetailDateItem label="Iniciada" value={evaluation.started_at} />
+        <DetailDateItem label="Enviada" value={evaluation.submitted_at} />
+      </div>
+    </div>
+  );
+}
+
+function EvaluationDetail({
+  evaluation,
+  starting,
+  onStart,
+}: {
+  evaluation: UserEvaluation;
+  starting: boolean;
+  onStart: () => void;
+}) {
+  const details = parseDetails(evaluation.details);
+  const normalizedStatus = normalizeStatus(evaluation.status);
+  const statusConfig = getStatusConfig(normalizedStatus);
+  const canStart = canStartEvaluation(normalizedStatus);
+
+  const isExpired = isEvaluationExpired(evaluation.dueDate);
+  const isCompleted = normalizedStatus === 3;
+  const showExpiredMessage = isExpired && !isCompleted;
+
+  console.log("evaluation", evaluation)
+  return (
+    <div className="space-y-6">
+      <EvaluationDetailHeader evaluation={evaluation} statusConfig={statusConfig} />
+
+      <EvaluationDetailMetrics evaluation={evaluation} details={details} />
+
+      <EvaluationDetailInstructions instructions={details.instructions} />
+
+      {showExpiredMessage ? (
+        <div className="flex justify-end">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200 shadow-sm">
+            <AlertCircle size={14} className="animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-wider">
+              Evaluación vencida
+            </span>
+          </div>
+        </div>
+      ) : (
+        evaluation.online ?
+          <div className="flex justify-end">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 shadow-sm">
+
+              {/*         <div className="flex gap-0.5">
+          <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+          <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+          <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"></span>
+        </div> */}
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold uppercase tracking-tight leading-none">
+                  Pendiente de carga
+                </span>
+              </div>
+            </div>
+          </div>
+          :
+          <EvaluationDetailActions
+            canStart={canStart}
+            starting={starting}
+            onStart={onStart}
+          />
+
+
+      )}
+
+      <EvaluationDetailDates evaluation={evaluation} />
+    </div>
+  );
+}
+
+function EvaluationsList({
+  evaluations,
+  selectedEvaluationId,
+  onSelect,
+}: {
+  evaluations: UserEvaluation[];
+  selectedEvaluationId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
+      <div className="mb-4 flex items-center gap-2">
+        <BarChart3 size={18} className="text-green-600" />
+        <h3 className="font-semibold text-gray-900">Lista de evaluaciones</h3>
+      </div>
+
+      {evaluations.length === 0 ? (
+        <EmptyEvaluationsState />
+      ) : (
+        <div className="space-y-3">
+          {evaluations.map((evaluation) => (
+            <EvaluationsListItem
+              key={evaluation.id}
+              evaluation={evaluation}
+              isSelected={selectedEvaluationId === evaluation.id}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EvaluationsSummary({
+  pending,
+  inProgress,
+  completed,
+}: {
+  pending: number;
+  inProgress: number;
+  completed: number;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      <SummaryStatCard
+        title="Pendientes"
+        value={pending}
+        className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-700"
+      />
+      <SummaryStatCard
+        title="En progreso"
+        value={inProgress}
+        className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-700"
+      />
+      <SummaryStatCard
+        title="Completadas"
+        value={completed}
+        className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700"
+      />
+    </div>
+  );
+}
+
+function EvaluationsSkeleton() {
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="animate-pulse space-y-4">
+        <div className="h-6 w-56 rounded bg-gray-200" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
+          <div className="space-y-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 rounded-2xl bg-gray-100" />
+            ))}
+          </div>
+          <div className="h-[420px] rounded-2xl bg-gray-100" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EvaluationsErrorState({ error }: { error: string }) {
+  return (
+    <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700">
+      {error}
+    </div>
+  );
 }
 
 export default function UserEvaluationsPanel() {
@@ -124,7 +585,25 @@ export default function UserEvaluationsPanel() {
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [activeGoogleFormId, setActiveGoogleFormId] = useState<string | null>(null);
-  const [activeGoogleFormTitle, setActiveGoogleFormTitle] = useState<string>("");
+  const [activeGoogleFormTitle, setActiveGoogleFormTitle] = useState("");
+
+  const selectedEvaluation = useMemo(() => {
+    return (
+      evaluations.find((evaluation) => evaluation.id === selectedEvaluationId) || null
+    );
+  }, [evaluations, selectedEvaluationId]);
+
+  const stats = useMemo(() => {
+    const normalized = evaluations.map((evaluation) =>
+      normalizeStatus(evaluation.status)
+    );
+
+    return {
+      pending: normalized.filter((status) => status === 0 || status === 1).length,
+      inProgress: normalized.filter((status) => status === 2).length,
+      completed: normalized.filter((status) => status === 3).length,
+    };
+  }, [evaluations]);
 
   const fetchEvaluations = async () => {
     try {
@@ -145,26 +624,33 @@ export default function UserEvaluationsPanel() {
       const incomingEvaluations: UserEvaluation[] = data.evaluations || [];
       setEvaluations(incomingEvaluations);
 
-      if (incomingEvaluations.length > 0) {
-        setSelectedEvaluationId((prevSelectedId) => {
-          if (!prevSelectedId) return incomingEvaluations[0].id;
-
-          const exists = incomingEvaluations.some(
-            (evaluation) => evaluation.id === prevSelectedId
-          );
-
-          return exists ? prevSelectedId : incomingEvaluations[0].id;
-        });
-      } else {
+      if (incomingEvaluations.length === 0) {
         setSelectedEvaluationId(null);
+        return;
       }
+
+      setSelectedEvaluationId((prevSelectedId) => {
+        if (!prevSelectedId) {
+          return incomingEvaluations[0].id;
+        }
+
+        const exists = incomingEvaluations.some(
+          (evaluation) => evaluation.id === prevSelectedId
+        );
+
+        return exists ? prevSelectedId : incomingEvaluations[0].id;
+      });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Error loading evaluations"
-      );
+      setError(err instanceof Error ? err.message : "Error loading evaluations");
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetFormModalState = () => {
+    setIsFormModalOpen(false);
+    setActiveGoogleFormId(null);
+    setActiveGoogleFormTitle("");
   };
 
   const handleOpenGoogleForm = async () => {
@@ -178,14 +664,15 @@ export default function UserEvaluationsPanel() {
 
       const success = await startEvaluation(selectedEvaluationId);
 
-      if (success) {
-        await fetchEvaluations();
-        setActiveGoogleFormId(selectedEvaluation.google_form_id);
-        setActiveGoogleFormTitle(selectedEvaluation.title || "Evaluación");
-        setIsFormModalOpen(true);
-      } else {
+      if (!success) {
         alert("No se pudo iniciar la evaluación. Inténtalo de nuevo.");
+        return;
       }
+
+      await fetchEvaluations();
+      setActiveGoogleFormId(selectedEvaluation.google_form_id);
+      setActiveGoogleFormTitle(selectedEvaluation.title || "Evaluación");
+      setIsFormModalOpen(true);
     } catch (error) {
       console.error("Error al actualizar el estado:", error);
       alert("Ocurrió un error al conectar con el servidor.");
@@ -194,53 +681,32 @@ export default function UserEvaluationsPanel() {
     }
   };
 
+  const handleCloseFormModal = async () => {
+    try {
+      if (selectedEvaluationId) {
+        const success = await finishEvaluation(selectedEvaluationId);
+
+        if (success) {
+          await fetchEvaluations();
+        }
+      }
+    } catch (error) {
+      console.error("Error al finalizar evaluación:", error);
+    } finally {
+      resetFormModalState();
+    }
+  };
+
   useEffect(() => {
     fetchEvaluations();
   }, []);
 
-  const selectedEvaluation = useMemo(
-    () =>
-      evaluations.find((evaluation) => evaluation.id === selectedEvaluationId) ||
-      null,
-    [evaluations, selectedEvaluationId]
-  );
-
-  const stats = useMemo(() => {
-    const normalized = evaluations.map((evaluation) =>
-      normalizeStatus(evaluation.status)
-    );
-
-    return {
-      pending: normalized.filter((s) => s === 0 || s === 1).length,
-      inProgress: normalized.filter((s) => s === 2).length,
-      completed: normalized.filter((s) => s === 3).length,
-    };
-  }, [evaluations]);
-
   if (loading) {
-    return (
-      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 w-56 rounded bg-gray-200" />
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-            <div className="space-y-3">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-24 rounded-2xl bg-gray-100" />
-              ))}
-            </div>
-            <div className="h-[420px] rounded-2xl bg-gray-100" />
-          </div>
-        </div>
-      </div>
-    );
+    return <EvaluationsSkeleton />;
   }
 
   if (error) {
-    return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700">
-        {error}
-      </div>
-    );
+    return <EvaluationsErrorState error={error} />;
   }
 
   return (
@@ -257,255 +723,29 @@ export default function UserEvaluationsPanel() {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-xs font-medium text-amber-700">Pendientes</p>
-                <p className="mt-1 text-xl font-bold text-amber-900">
-                  {stats.pending}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3">
-                <p className="text-xs font-medium text-blue-700">En progreso</p>
-                <p className="mt-1 text-xl font-bold text-blue-900">
-                  {stats.inProgress}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                <p className="text-xs font-medium text-emerald-700">Completadas</p>
-                <p className="mt-1 text-xl font-bold text-emerald-900">
-                  {stats.completed}
-                </p>
-              </div>
-            </div>
+            <EvaluationsSummary
+              pending={stats.pending}
+              inProgress={stats.inProgress}
+              completed={stats.completed}
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-            <div className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
-              <div className="mb-4 flex items-center gap-2">
-                <BarChart3 size={18} className="text-green-600" />
-                <h3 className="font-semibold text-gray-900">
-                  Lista de evaluaciones
-                </h3>
-              </div>
-
-              {evaluations.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">
-                  No tienes evaluaciones asignadas todavía.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {evaluations.map((evaluation) => {
-                    const status = normalizeStatus(evaluation.status);
-                    const statusConfig = getStatusConfig(status);
-                    const StatusIcon = statusConfig.icon;
-                    const isSelected = selectedEvaluationId === evaluation.id;
-
-                    return (
-                      <button
-                        key={evaluation.id}
-                        type="button"
-                        onClick={() => setSelectedEvaluationId(evaluation.id)}
-                        className={`w-full rounded-2xl border p-4 text-left transition-all ${
-                          isSelected
-                            ? "border-green-300 bg-white shadow-sm ring-2 ring-green-500/20"
-                            : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
-                        }`}
-                      >
-                        <div className="mb-2 flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-gray-900">
-                              {evaluation.title}
-                            </p>
-                            <p className="mt-1 line-clamp-2 text-sm text-gray-500">
-                              {evaluation.description || "Sin descripción"}
-                            </p>
-                          </div>
-
-                          <ChevronRight
-                            size={18}
-                            className={isSelected ? "text-green-600" : "text-gray-400"}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${statusConfig.badge}`}
-                          >
-                            <StatusIcon size={14} />
-                            {statusConfig.label}
-                          </span>
-
-                          <span className="text-xs font-medium text-gray-500">
-                            {evaluation.score != null && evaluation.max_score != null
-                              ? `${evaluation.score}/${evaluation.max_score}`
-                              : evaluation.score != null
-                                ? `${evaluation.score}`
-                                : "Sin resultado"}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <EvaluationsList
+              evaluations={evaluations}
+              selectedEvaluationId={selectedEvaluationId}
+              onSelect={setSelectedEvaluationId}
+            />
 
             <div className="rounded-2xl border border-gray-200 bg-white p-5">
-              {!selectedEvaluation ? (
-                <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-center text-gray-500">
-                  Selecciona una evaluación para ver sus detalles.
-                </div>
+              {selectedEvaluation ? (
+                <EvaluationDetail
+                  evaluation={selectedEvaluation}
+                  starting={starting}
+                  onStart={handleOpenGoogleForm}
+                />
               ) : (
-                (() => {
-                  const details = parseDetails(selectedEvaluation.details);
-                  const normalizedStatus = normalizeStatus(selectedEvaluation.status);
-                  const statusConfig = getStatusConfig(normalizedStatus);
-                  const StatusIcon = statusConfig.icon;
-                  const canStart = normalizedStatus === 0 || normalizedStatus === 1;
-
-                  return (
-                    <div className="space-y-6">
-                      <div className="border-b border-gray-100 pb-5">
-                        <div>
-                          <div className="mb-2 flex items-center gap-2">
-                            <span className={`h-2.5 w-2.5 rounded-full ${statusConfig.dot}`} />
-                            <span
-                              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${statusConfig.badge}`}
-                            >
-                              <StatusIcon size={14} />
-                              {statusConfig.label}
-                            </span>
-                          </div>
-
-                          <h3 className="text-2xl font-semibold text-gray-900">
-                            {selectedEvaluation.title}
-                          </h3>
-                          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
-                            {selectedEvaluation.description || "Sin descripción"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <Clock3 size={16} className="text-violet-600" />
-                            Duración
-                          </div>
-                          <p className="text-sm text-gray-900">
-                            {details.durationMinutes
-                              ? `${details.durationMinutes} min`
-                              : "—"}
-                          </p>
-                        </div>
-
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <FileText size={16} className="text-amber-600" />
-                            Tipo
-                          </div>
-                          <p className="text-sm capitalize text-gray-900">
-                            {details.type || "—"}
-                          </p>
-                        </div>
-
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <Target size={16} className="text-blue-600" />
-                            Puntaje mínimo
-                          </div>
-                          <p className="text-sm text-gray-900">
-                            {details.passingScore ?? "—"}
-                          </p>
-                        </div>
-
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <CheckCircle2 size={16} className="text-emerald-600" />
-                            Resultado
-                          </div>
-                          <p className="text-sm text-gray-900">
-                            {selectedEvaluation.score != null &&
-                            selectedEvaluation.max_score != null
-                              ? `${selectedEvaluation.score}/${selectedEvaluation.max_score}`
-                              : selectedEvaluation.score != null
-                                ? `${selectedEvaluation.score}`
-                                : "—"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {details.instructions && (
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                          <h4 className="mb-2 font-medium text-gray-900">
-                            Instrucciones
-                          </h4>
-                          <p className="text-sm leading-6 text-gray-600">
-                            {details.instructions}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="flex flex-wrap items-center justify-end gap-3">
-                        {canStart && (
-                          <button
-                            type="button"
-                            onClick={handleOpenGoogleForm}
-                            disabled={starting}
-                            className="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-600 disabled:opacity-60"
-                          >
-                            {starting ? (
-                              <Loader2 size={16} className="animate-spin" />
-                            ) : (
-                              <PlayCircle size={16} />
-                            )}
-                            {starting ? "Iniciando..." : "Iniciar evaluación"}
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                          <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                              Asignada
-                            </p>
-                            <p className="mt-1 text-sm text-gray-900">
-                              {formatDate(selectedEvaluation.assigned_date)}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                              Fecha límite
-                            </p>
-                            <p className="mt-1 text-sm text-gray-900">
-                              {formatDate(selectedEvaluation.due_date)}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                              Iniciada
-                            </p>
-                            <p className="mt-1 text-sm text-gray-900">
-                              {formatDate(selectedEvaluation.started_at)}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                              Enviada
-                            </p>
-                            <p className="mt-1 text-sm text-gray-900">
-                              {formatDate(selectedEvaluation.submitted_at)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()
+                <EmptySelectedEvaluationState />
               )}
             </div>
           </div>
@@ -514,25 +754,7 @@ export default function UserEvaluationsPanel() {
 
       <EvaluationFormModal
         open={isFormModalOpen}
-        onClose={async () => {
-          try {
-            console.log("esta por cerrar", selectedEvaluationId);
-
-            if (selectedEvaluationId) {
-              const success = await finishEvaluation(selectedEvaluationId);
-
-              if (success) {
-                await fetchEvaluations();
-              }
-            }
-          } catch (error) {
-            console.error("Error al finalizar evaluación:", error);
-          } finally {
-            setIsFormModalOpen(false);
-            setActiveGoogleFormId(null);
-            setActiveGoogleFormTitle("");
-          }
-        }}
+        onClose={handleCloseFormModal}
         title={activeGoogleFormTitle}
         googleFormId={activeGoogleFormId}
       />

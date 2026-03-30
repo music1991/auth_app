@@ -646,6 +646,7 @@ async getEvaluationTemplatesWithStats() {
     created_at: string;
     assigned_users: number;
     responses_count: number;
+    online: boolean;
   }>`
     SELECT
       et.id,
@@ -655,6 +656,7 @@ async getEvaluationTemplatesWithStats() {
       et.status,
       et.due_date,
       et.created_at,
+      et.online,
       COUNT(e.id)::int as assigned_users,
       COUNT(e.id) FILTER (WHERE e.completed_date IS NOT NULL)::int as responses_count
     FROM evaluation_templates et
@@ -666,7 +668,8 @@ async getEvaluationTemplatesWithStats() {
       et.type,
       et.status,
       et.due_date,
-      et.created_at
+      et.created_at,
+      et.online 
     ORDER BY et.created_at DESC
   `;
 
@@ -686,9 +689,60 @@ async getEvaluationTemplatesWithStats() {
       responses,
       completionRate:
         assignedUsers > 0 ? Math.round((responses / assignedUsers) * 100) : 0,
+      online: row.online 
     };
   });
 },
+
+async getAssignedUsersByTemplate(templateId: string) {
+  const rows = await sql<{
+    id: string;
+    evaluation_id: string;
+    name: string;
+    email: string;
+    completed_date: string | null;
+  }>`
+    SELECT 
+      u.id,
+      e.id as evaluation_id,
+      u.name,
+      u.email,
+      e.completed_date
+    FROM evaluations e
+    JOIN users u ON e.user_id = u.id
+    WHERE e.template_id = ${templateId}
+    ORDER BY u.name ASC
+  `;
+
+  return rows.map(row => ({
+    id: row.id,
+    evaluationId: row.evaluation_id,
+    name: row.name,
+    email: row.email,
+    isCompleted: !!row.completed_date
+  }));
+},
+
+async unassignUserFromEvaluation(templateId: string, userId: string) {
+  try {
+    const result = await sql`
+      DELETE FROM evaluations 
+      WHERE template_id = ${templateId} 
+      AND user_id = ${userId}
+      AND completed_date IS NULL
+      RETURNING id;
+    `;
+
+    return result.length > 0;
+    
+  } catch (error) {
+    console.error("Error al desasignar usuario:", error);
+    throw new Error("No se pudo eliminar la asignación");
+  }
+},
+
+
+
 
 async createEvaluationTemplate(template: {
   title: string;
@@ -697,6 +751,7 @@ async createEvaluationTemplate(template: {
   dueDate?: string | null;
   createdBy: string;
   googleFormId?: string;
+  online: boolean;
 }) {
   const rows = await sql<{ id: string }>`
     INSERT INTO evaluation_templates (
@@ -706,7 +761,8 @@ async createEvaluationTemplate(template: {
       status,
       created_by,
       due_date,
-      google_form_id
+      google_form_id,
+      online
     )
     VALUES (
       ${template.title},
@@ -715,7 +771,8 @@ async createEvaluationTemplate(template: {
       'draft',
       ${template.createdBy},
       ${template.dueDate ?? null},
-      ${template.googleFormId ?? null}
+      ${template.googleFormId ?? null},
+      ${template.online}
     )
     RETURNING id
   `;
@@ -751,6 +808,7 @@ async getUserEvaluations(userId: string) {
     description: string;
     type: string;
     google_form_id: string;
+    online: boolean;
   }>`
     SELECT
       e.id,
@@ -767,10 +825,11 @@ async getUserEvaluations(userId: string) {
       et.title,
       et.description,
       et.type,
-      et.google_form_id as google_form_id
+      et.google_form_id as google_form_id,
+      et.online
     FROM evaluations e
-    INNER JOIN evaluation_templates et ON et.id = e.template_id
-    WHERE e.user_id = ${userId}
+    INNER JOIN evaluation_templates et ON et.id = e.template_id AND et.status = 'active'
+    WHERE e.user_id = ${userId} 
     ORDER BY
       e.due_date ASC,
       e.created_at DESC
@@ -790,6 +849,7 @@ async getUserEvaluations(userId: string) {
     maxScore: row.max_score ?? 0,
     google_form_id: row.google_form_id,
     responses: row.responses,
+    online: row.online
   }));
 },
 
