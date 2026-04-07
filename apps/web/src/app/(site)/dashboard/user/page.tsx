@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { BarChart3, ClipboardList, UserCircle2 } from "lucide-react";
+import { BarChart3, ClipboardList, TrendingUp, UserCircle2 } from "lucide-react";
 import UserTasksPanel from "@/components/UserTasksPanel";
 import UserEvaluationsPanel from "@/components/UserEvaluationsPanel";
+import UserPerformanceDashboard from "@/components/dashboard/UserPerformanceDashboard";
 
 
 export default function UserDashboardPage() {
@@ -12,6 +13,7 @@ export default function UserDashboardPage() {
   const tabs = [
     { id: "tasks", name: "Mis tareas", icon: ClipboardList },
     { id: "evaluations", name: "Evaluaciones", icon: BarChart3 },
+    { id: "performance", name: "Mi desempeño", icon: TrendingUp },
   ];
 
   return (
@@ -70,6 +72,7 @@ export default function UserDashboardPage() {
         <div className="rounded-2xl border border-white/60 bg-white/80 shadow-lg backdrop-blur-sm">
           {activeTab === "tasks" && <UserTasksPanel />}
           {activeTab === "evaluations" && <UserEvaluationsPanel />}
+          {activeTab === "performance" && <UserPerformanceDashboard />}
         </div>
       </div>
     </div>

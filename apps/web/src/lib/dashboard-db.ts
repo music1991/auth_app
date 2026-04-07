@@ -1236,6 +1236,108 @@ async getAdminUserPerformance(userId: string, period = "30d") {
   };
 },
 
+async getUserOwnPerformance(userId: string, period = "30d") {
+  const days = getPeriodDays(period);
+
+  const [userResult] = await sql<{
+    id: string;
+    name: string;
+  }>`
+    SELECT id, name
+    FROM users
+    WHERE id = ${userId}
+      AND role = 'user'
+    LIMIT 1
+  `;
+
+  if (!userResult) {
+    throw new Error("User not found");
+  }
+
+  const [taskResult] = await sql<{
+    task_completion_pct: number | null;
+    on_time_task_pct: number | null;
+  }>`
+    SELECT
+      ROUND(
+        COUNT(*) FILTER (WHERE status = 'completed') * 100.0
+        / NULLIF(COUNT(*), 0),
+        1
+      ) AS task_completion_pct,
+
+      ROUND(
+        COUNT(*) FILTER (
+          WHERE status = 'completed'
+            AND completed_date IS NOT NULL
+            AND due_date IS NOT NULL
+            AND completed_date <= due_date
+        ) * 100.0
+        / NULLIF(COUNT(*) FILTER (WHERE status = 'completed'), 0),
+        1
+      ) AS on_time_task_pct
+    FROM tasks
+    WHERE user_id = ${userId}
+      AND assigned_date >= NOW() - ${days} * INTERVAL '1 day'
+  `;
+
+  const [evalResult] = await sql<{
+    evaluation_completion_pct: number | null;
+    evaluation_approval_pct: number | null;
+    avg_score_pct: number | null;
+  }>`
+    SELECT
+      ROUND(
+        COUNT(*) FILTER (WHERE status = 3) * 100.0
+        / NULLIF(COUNT(*), 0),
+        1
+      ) AS evaluation_completion_pct,
+
+      ROUND(
+        COUNT(*) FILTER (
+          WHERE status = 3
+            AND max_score > 0
+            AND score * 100.0 / max_score >= 60
+        ) * 100.0
+        / NULLIF(COUNT(*) FILTER (WHERE status = 3), 0),
+        1
+      ) AS evaluation_approval_pct,
+
+      ROUND(
+        AVG(
+          CASE
+            WHEN status = 3 AND max_score > 0
+            THEN score * 100.0 / max_score
+          END
+        ),
+        1
+      ) AS avg_score_pct
+    FROM evaluations
+    WHERE user_id = ${userId}
+      AND assigned_date >= NOW() - ${days} * INTERVAL '1 day'
+  `;
+
+  const [sessionResult] = await sql<{
+    total_hours: number | null;
+  }>`
+    SELECT
+      ROUND(COALESCE(SUM(duration), 0) / 3600.0, 1) AS total_hours
+    FROM work_sessions
+    WHERE user_id = ${userId}
+      AND session_date >= CURRENT_DATE - ${days} * INTERVAL '1 day'
+  `;
+
+  return {
+    user_id: userResult.id,
+    user_name: userResult.name,
+    task_completion_pct: Number(taskResult?.task_completion_pct ?? 0),
+    on_time_task_pct: Number(taskResult?.on_time_task_pct ?? 0),
+    evaluation_completion_pct: Number(evalResult?.evaluation_completion_pct ?? 0),
+    evaluation_approval_pct: Number(evalResult?.evaluation_approval_pct ?? 0),
+    avg_score_pct: Number(evalResult?.avg_score_pct ?? 0),
+    total_hours: Number(sessionResult?.total_hours ?? 0),
+  };
+},
+
 };
 
 
