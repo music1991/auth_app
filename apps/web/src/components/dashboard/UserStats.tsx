@@ -1,4 +1,4 @@
-"use client";
+/* "use client";
 
 import { 
   Clock, 
@@ -138,4 +138,4 @@ export default function UserStats() {
       })}
     </div>
   );
-}
+} */

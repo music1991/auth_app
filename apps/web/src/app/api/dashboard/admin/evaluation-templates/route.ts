@@ -58,7 +58,8 @@ export async function POST(request: NextRequest) {
       dueDate: data.dueDate,
       googleFormId: data.google_form_id,
       createdBy: session.userId,
-      online: data.online
+      online: data.online,
+      maxScore: data.max_score,
     });
 
     return NextResponse.json({ success: true, templateId }, { status: 201 });

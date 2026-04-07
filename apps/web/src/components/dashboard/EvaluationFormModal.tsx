@@ -86,9 +86,9 @@ export default function EvaluationFormModal({
                 src={embedUrl!}
                 title={title || "Formulario de evaluación"}
                 className="h-full w-full"
-                frameBorder="0"
+    /*             frameBorder="0"
                 marginHeight={0}
-                marginWidth={0}
+                marginWidth={0} */
               >
                 Cargando formulario...
               </iframe>

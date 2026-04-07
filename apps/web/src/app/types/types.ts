@@ -205,6 +205,7 @@ export interface NewEvaluationFormData {
   dueDate: string;
   google_form_id: string;
   online: boolean;
+  max_score: number;
 }
 
 export interface AssignmentUser extends AdminUser {

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Users, ClipboardList, BarChart3, Shield } from "lucide-react";
-import AdminStats from "@/components/dashboard/AdminStats";
+import { Users, ClipboardList, BarChart3, Shield, TrendingUp } from "lucide-react";
+//import AdminStats from "@/components/dashboard/AdminStats";
 import AdminUserManagement from "@/components/dashboard/AdminUserManagement";
 import AdminTaskAssignment from "@/components/dashboard/AdminTaskAssignment";
 import AdminEvaluationManager from "@/components/dashboard/AdminEvaluationManager";
+import AdminPerformanceDashboard from "@/components/dashboard/AdminPerformanceDashboard";
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState("users");
@@ -14,6 +15,7 @@ export default function AdminDashboardPage() {
     { id: "users", name: "User Management", icon: Users },
     { id: "tasks", name: "Task Assignment", icon: ClipboardList },
     { id: "evaluations", name: "Evaluations", icon: BarChart3 },
+    { id: "performance", name: "Desempeño", icon: TrendingUp },
   ];
 
   return (
@@ -44,7 +46,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-{/*         <AdminStats /> */}
+{/*    <AdminStats /> */}
 
         <div className="mb-8">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-1 border border-gray-200 inline-flex">
@@ -72,6 +74,7 @@ export default function AdminDashboardPage() {
           {activeTab === "users" && <AdminUserManagement />}
           {activeTab === "tasks" && <AdminTaskAssignment />}
           {activeTab === "evaluations" && <AdminEvaluationManager />}
+           {activeTab === "performance" && <AdminPerformanceDashboard />}
         </div>
       </div>
     </div>
