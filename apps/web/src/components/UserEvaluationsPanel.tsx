@@ -454,7 +454,7 @@ function EvaluationDetail({
           </div>
         </div>
       ) : (
-        evaluation.online ?
+        !evaluation.online ?
           <div className="flex justify-end">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 shadow-sm">
 
