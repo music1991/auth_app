@@ -31,7 +31,7 @@ export type TaskType = "course" | "report" | "project";
 export type TaskStatus = "pending" | "in-progress" | "completed";
 
 export interface DashboardTaskResource {
-  id: number;
+  id: string;
   title: string;
   type: string;
   url: string;
@@ -74,19 +74,10 @@ export interface TaskTemplate {
   created_at: string;
 }
 
-export interface WorkSession {
-  id: string;
-  user_id: string;
-  start_time: string;
-  end_time: string | null;
-  duration: number | null;
-  active: boolean;
-  created_at: string;
-}
 
 export type EvaluationType = "environment" | "performance" | "skills";
 export type EvaluationTemplateStatus = "draft" | "active" | "completed";
-export type EvaluationAssignmentStatus = "pending" | "completed" | "expired";
+export type EvaluationAssignmentStatus = "pending" | "in_progress" | "completed" | "expired";
 
 export interface Evaluation {
   id: string;

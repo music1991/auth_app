@@ -253,7 +253,7 @@ async getAdminUserTaskById(
     const rows = await sql<any>`
       SELECT
         (SELECT COUNT(*) FROM users) as total_users,
-        (SELECT COUNT(DISTINCT user_id) FROM work_sessions WHERE start_time >= NOW() - INTERVAL '7 days') as active_users,
+        (SELECT COUNT(DISTINCT user_id) FROM work_sessions WHERE session_date >= CURRENT_DATE - 7) as active_users,
         (SELECT COUNT(*) FROM tasks WHERE status = 'pending') as pending_tasks,
         (SELECT COUNT(*) FROM tasks WHERE status = 'completed') as completed_tasks,
         (SELECT COUNT(*) FROM evaluations WHERE status = 'pending') as pending_evaluations,
@@ -924,7 +924,7 @@ async assignEvaluationTemplateToUsers(data: {
         ${data.templateId},
         ${userId},
         ${data.assignedBy},
-        0,
+        'pending',
         CURRENT_TIMESTAMP,
         ${data.dueDate ?? null},
         0,
@@ -993,25 +993,25 @@ async getAdminTeamStats(period = "30d") {
   }>`
     SELECT
       ROUND(
-        COUNT(*) FILTER (WHERE status = 3) * 100.0
+        COUNT(*) FILTER (WHERE status = 'completed') * 100.0
         / NULLIF(COUNT(*), 0),
         1
       ) AS evaluation_completion_pct,
 
       ROUND(
         COUNT(*) FILTER (
-          WHERE status = 3
+          WHERE status = 'completed'
             AND max_score > 0
             AND score * 100.0 / max_score >= 60
         ) * 100.0
-        / NULLIF(COUNT(*) FILTER (WHERE status = 3), 0),
+        / NULLIF(COUNT(*) FILTER (WHERE status = 'completed'), 0),
         1
       ) AS evaluation_approval_pct,
 
       ROUND(
         AVG(
           CASE
-            WHEN status = 3 AND max_score > 0
+            WHEN status = 'completed' AND max_score > 0
             THEN score * 100.0 / max_score
           END
         ),
@@ -1074,17 +1074,17 @@ async getAdminTeamRanking(period = "30d") {
         e.user_id,
         ROUND(
           COUNT(*) FILTER (
-            WHERE e.status = 3
+            WHERE e.status = 'completed'
               AND e.max_score > 0
               AND e.score * 100.0 / e.max_score >= 60
           ) * 100.0
-          / NULLIF(COUNT(*) FILTER (WHERE e.status = 3), 0),
+          / NULLIF(COUNT(*) FILTER (WHERE e.status = 'completed'), 0),
           1
         ) AS evaluation_approval_pct,
         ROUND(
           AVG(
             CASE
-              WHEN e.status = 3 AND e.max_score > 0
+              WHEN e.status = 'completed' AND e.max_score > 0
               THEN e.score * 100.0 / e.max_score
             END
           ),
@@ -1185,25 +1185,25 @@ async getAdminUserPerformance(userId: string, period = "30d") {
   }>`
     SELECT
       ROUND(
-        COUNT(*) FILTER (WHERE status = 3) * 100.0
+        COUNT(*) FILTER (WHERE status = 'completed') * 100.0
         / NULLIF(COUNT(*), 0),
         1
       ) AS evaluation_completion_pct,
 
       ROUND(
         COUNT(*) FILTER (
-          WHERE status = 3
+          WHERE status = 'completed'
             AND max_score > 0
             AND score * 100.0 / max_score >= 60
         ) * 100.0
-        / NULLIF(COUNT(*) FILTER (WHERE status = 3), 0),
+        / NULLIF(COUNT(*) FILTER (WHERE status = 'completed'), 0),
         1
       ) AS evaluation_approval_pct,
 
       ROUND(
         AVG(
           CASE
-            WHEN status = 3 AND max_score > 0
+            WHEN status = 'completed' AND max_score > 0
             THEN score * 100.0 / max_score
           END
         ),
@@ -1287,25 +1287,25 @@ async getUserOwnPerformance(userId: string, period = "30d") {
   }>`
     SELECT
       ROUND(
-        COUNT(*) FILTER (WHERE status = 3) * 100.0
+        COUNT(*) FILTER (WHERE status = 'completed') * 100.0
         / NULLIF(COUNT(*), 0),
         1
       ) AS evaluation_completion_pct,
 
       ROUND(
         COUNT(*) FILTER (
-          WHERE status = 3
+          WHERE status = 'completed'
             AND max_score > 0
             AND score * 100.0 / max_score >= 60
         ) * 100.0
-        / NULLIF(COUNT(*) FILTER (WHERE status = 3), 0),
+        / NULLIF(COUNT(*) FILTER (WHERE status = 'completed'), 0),
         1
       ) AS evaluation_approval_pct,
 
       ROUND(
         AVG(
           CASE
-            WHEN status = 3 AND max_score > 0
+            WHEN status = 'completed' AND max_score > 0
             THEN score * 100.0 / max_score
           END
         ),

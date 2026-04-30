@@ -6,7 +6,6 @@ import {
   BarChart3,
   CheckCircle2,
   ChevronRight,
-  ClipboardCheck,
   Clock3,
   FileText,
   Loader2,
@@ -20,7 +19,7 @@ import { EVALUATION_TYPE_LABELS } from "@/lib/constants";
 import { EvaluationType } from "@/app/types/types";
 import EvaluationFormModal from "./EvaluationFormModal";
 
-type EvaluationStatus = 0 | 1 | 2 | 3;
+type EvaluationStatus = 'pending' | 'in_progress' | 'completed' | 'expired';
 
 interface EvaluationDetails {
   instructions?: string;
@@ -87,43 +86,35 @@ function parseDetails(details: UserEvaluation["details"]): EvaluationDetails {
   return parseJson<EvaluationDetails>(details, {});
 }
 
-function normalizeStatus(status?: number | null): EvaluationStatus {
-  if (status === 0 || status === 1 || status === 2 || status === 3) {
-    return status;
-  }
-
-  return 0;
-}
-
 function getStatusConfig(status: EvaluationStatus): StatusConfig {
   switch (status) {
-    case 0:
+    case 'pending':
       return {
         label: "Pendiente",
         icon: AlertCircle,
         badge: "bg-amber-100 text-amber-700 border-amber-200",
         dot: "bg-amber-500",
       };
-    case 1:
-      return {
-        label: "Comenzada",
-        icon: ClipboardCheck,
-        badge: "bg-violet-100 text-violet-700 border-violet-200",
-        dot: "bg-violet-500",
-      };
-    case 2:
+    case 'in_progress':
       return {
         label: "En progreso",
         icon: PlayCircle,
         badge: "bg-blue-100 text-blue-700 border-blue-200",
         dot: "bg-blue-500",
       };
-    case 3:
+    case 'completed':
       return {
         label: "Completada",
         icon: CheckCircle2,
         badge: "bg-emerald-100 text-emerald-700 border-emerald-200",
         dot: "bg-emerald-500",
+      };
+    case 'expired':
+      return {
+        label: "Vencida",
+        icon: AlertCircle,
+        badge: "bg-red-100 text-red-700 border-red-200",
+        dot: "bg-red-500",
       };
     default:
       return {
@@ -149,7 +140,7 @@ function getEvaluationScore(evaluation: UserEvaluation) {
 }
 
 function canStartEvaluation(status: EvaluationStatus) {
-  return status === 0 || status === 1;
+  return status === 'pending' || status === 'in_progress';
 }
 
 function SummaryStatCard({
@@ -178,7 +169,7 @@ function EvaluationsListItem({
   isSelected: boolean;
   onSelect: (id: string) => void;
 }) {
-  const status = normalizeStatus(evaluation.status);
+  const status = evaluation.status ?? 'pending';
   const statusConfig = getStatusConfig(status);
   const StatusIcon = statusConfig.icon;
 
@@ -335,7 +326,7 @@ function EvaluationDetailMetrics({
       <DetailMetricCard
         icon={<CheckCircle2 size={16} className="text-emerald-600" />}
         title="Resultado"
-        value={evaluation.status === 3 ? evaluation.score : "-"}
+        value={evaluation.status === 'completed' ? evaluation.score : "-"}
       />
     </div>
   );
@@ -413,12 +404,12 @@ function EvaluationDetail({
   onStart: () => void;
 }) {
   const details = parseDetails(evaluation.details);
-  const normalizedStatus = normalizeStatus(evaluation.status);
-  const statusConfig = getStatusConfig(normalizedStatus);
-  const canStart = canStartEvaluation(normalizedStatus);
+  const status = evaluation.status ?? 'pending';
+  const statusConfig = getStatusConfig(status);
+  const canStart = canStartEvaluation(status);
 
   const isExpired = isEvaluationExpired(evaluation.dueDate);
-  const isCompleted = normalizedStatus === 3;
+  const isCompleted = status === 'completed';
   const showExpiredMessage = isExpired && !isCompleted;
 
   return (
@@ -564,14 +555,10 @@ export default function UserEvaluationsPanel() {
   }, [evaluations, selectedEvaluationId]);
 
   const stats = useMemo(() => {
-    const normalized = evaluations.map((evaluation) =>
-      normalizeStatus(evaluation.status)
-    );
-
     return {
-      pending: normalized.filter((status) => status === 0 || status === 1).length,
-      inProgress: normalized.filter((status) => status === 2).length,
-      completed: normalized.filter((status) => status === 3).length,
+      pending: evaluations.filter((e) => e.status === 'pending').length,
+      inProgress: evaluations.filter((e) => e.status === 'in_progress').length,
+      completed: evaluations.filter((e) => e.status === 'completed').length,
     };
   }, [evaluations]);
 
