@@ -4,15 +4,7 @@ import { useEffect, useMemo } from "react";
 
 import { BaseModal } from "../BaseModal";
 import { AssignmentUser } from "@/app/types/types";
-
-
-function normalizeDateInput(value: string) {
-  if (!value) return "";
-  if (value.includes("T")) {
-    return value.replace(/"/g, "").split("T")[0];
-  }
-  return value;
-}
+import { normalizeDateInput } from "@/lib/utils";
 
 interface ManageAssignmentsModalProps {
   open: boolean;

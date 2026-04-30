@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-
-export type TaskTemplateType = "course" | "report" | "project";
+import type { TaskType } from "@/app/types/types";
 
 export interface TaskTemplate {
   id: string;
   title: string;
   description: string;
-  type: TaskTemplateType;
+  type: TaskType;
   estimatedHours: number;
   requirements: string[];
   createdBy?: string;
@@ -19,7 +18,7 @@ export interface TaskTemplate {
 export interface TaskTemplatePayload {
   title: string;
   description: string;
-  type: TaskTemplateType;
+  type: TaskType;
   estimatedHours: number;
   requirements: string[];
 }
@@ -38,9 +37,7 @@ export function useTaskTemplates() {
       const res = await fetch("/api/dashboard/admin/task-templates");
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || "Error loading templates");
-      }
+      if (!res.ok) throw new Error(data.error || "Error loading templates");
 
       setTemplates(data.taskTemplates || []);
     } catch (err) {
@@ -61,20 +58,12 @@ export function useTaskTemplates() {
 
       const res = await fetch("/api/dashboard/admin/task-templates", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "create-template",
-          data,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create-template", data }),
       });
 
       const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.error || "Error creating template");
-      }
+      if (!res.ok) throw new Error(result.error || "Error creating template");
 
       await loadTemplates();
     } catch (err) {
@@ -92,20 +81,12 @@ export function useTaskTemplates() {
 
       const res = await fetch("/api/dashboard/admin/task-templates", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "update-template",
-          data: { id, ...data },
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update-template", data: { id, ...data } }),
       });
 
       const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.error || "Error updating template");
-      }
+      if (!res.ok) throw new Error(result.error || "Error updating template");
 
       await loadTemplates();
     } catch (err) {
@@ -123,20 +104,12 @@ export function useTaskTemplates() {
 
       const res = await fetch("/api/dashboard/admin/task-templates", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "delete-template",
-          data: { id },
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete-template", data: { id } }),
       });
 
       const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.error || "Error deleting template");
-      }
+      if (!res.ok) throw new Error(result.error || "Error deleting template");
 
       await loadTemplates();
     } catch (err) {

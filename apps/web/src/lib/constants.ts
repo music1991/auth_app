@@ -29,4 +29,5 @@ export const INITIAL_EVALUATION_FORM: NewEvaluationFormData = {
   dueDate: "",
   google_form_id: "",
   online: true,
+  max_score: 0,
 };

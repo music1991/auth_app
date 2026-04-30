@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "crypto";
-import { db, type DbPasswordReset, type DbUser } from "@/lib/db";
+import { db, type DbPasswordReset } from "@/lib/db";
 
 export function hashResetToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -27,10 +27,5 @@ export async function consumeTokenAndUpdatePassword(
   const token_hash = hashResetToken(token);
   const pr = await db.getPasswordResetByHash(token_hash);
   if (!pr) return false;
-
   return db.consumeResetAndUpdatePassword(pr.id, newPasswordHash);
 }
-
-// export async function cleanupExpiredResets(olderThan: Date) {
-//   await db.deleteExpiredResets(olderThan.toISOString());
-// }

@@ -41,11 +41,9 @@ export async function sendEmail(opts: {
   });
 
   if (error) {
-    // eslint-disable-next-line no-console
     console.error("[email] Resend error:", error);
     throw new Error("Failed to send email");
   }
 
   return { id: data?.id };
 }
-

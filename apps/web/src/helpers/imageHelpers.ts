@@ -1,5 +1,14 @@
-import { createAvatar } from "@dicebear/core";
+import { createAvatar, type Style } from "@dicebear/core";
 import { avataaars, bottts, pixelArt } from "@dicebear/collection";
+
+type AvatarType = "avataaars" | "pixel-art" | "bottts";
+
+// Each collection has unique option types that are not mutually assignable.
+const COLLECTIONS: Record<AvatarType, Style<object>> = {
+  avataaars: avataaars as Style<object>,
+  "pixel-art": pixelArt as Style<object>,
+  bottts: bottts as Style<object>,
+};
 
 export function dataUrlToBlob(dataUrl: string): Blob {
   const [meta, content] = dataUrl.split(",");
@@ -11,8 +20,10 @@ export function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([arr], { type: mime });
 }
 
-export function generateDiceBearAvatar(type: string, seed?: string) {
-  const options = { seed: seed || Math.random().toString(36).substring(2), size: 256 };
-  const collections: any = { "avataaars": avataaars, "pixel-art": pixelArt, "bottts": bottts };
-  return createAvatar(collections[type] || avataaars, options).toDataUri();
+export function generateDiceBearAvatar(type: AvatarType, seed?: string): string {
+  const collection = COLLECTIONS[type] ?? (avataaars as Style<object>);
+  return createAvatar(collection, {
+    seed: seed ?? Math.random().toString(36).substring(2),
+    size: 256,
+  }).toDataUri();
 }

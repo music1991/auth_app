@@ -53,18 +53,6 @@ interface StatusConfig {
   dot: string;
 }
 
-/* const formatDateShort = (date: string | null | undefined) => {
-  if (!date) return "";
-  const cleanDate = date.replace(/"/g, '').trim();
-  const newDate = new Date(cleanDate);
-
-  if (isNaN(newDate.getTime())) {
-    return "Fecha inválida";
-  }
-
-  return newDate.toLocaleDateString('es-ES');
-}; */
-
 function isEvaluationExpired(dueDate?: string | null) {
   if (!dueDate) return false;
 
@@ -76,9 +64,6 @@ function isEvaluationExpired(dueDate?: string | null) {
 
   today.setHours(0, 0, 0, 0);
   due.setHours(0, 0, 0, 0);
-
-  console.log("Hoy:", today.toDateString()); //controlar la fecha con la q guarda..
-  console.log("Vence:", due.toDateString());
 
   return today > due;
 }
@@ -435,7 +420,6 @@ function EvaluationDetail({
   const isCompleted = normalizedStatus === 3;
   const showExpiredMessage = isExpired && !isCompleted;
 
-  console.log("evaluation", evaluation)
   return (
     <div className="space-y-6">
       <EvaluationDetailHeader evaluation={evaluation} statusConfig={statusConfig} />
@@ -453,31 +437,16 @@ function EvaluationDetail({
             </span>
           </div>
         </div>
-      ) : (
-        !evaluation.online ?
-          <div className="flex justify-end">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 shadow-sm">
-
-              {/*         <div className="flex gap-0.5">
-          <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-          <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-          <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"></span>
-        </div> */}
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold uppercase tracking-tight leading-none">
-                  Pendiente de carga
-                </span>
-              </div>
-            </div>
+      ) : !evaluation.online ? (
+        <div className="flex justify-end">
+          <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-blue-700 shadow-sm">
+            <span className="text-[10px] font-bold uppercase tracking-tight leading-none">
+              Pendiente de carga
+            </span>
           </div>
-          :
-          <EvaluationDetailActions
-            canStart={canStart}
-            starting={starting}
-            onStart={onStart}
-          />
-
-
+        </div>
+      ) : (
+        <EvaluationDetailActions canStart={canStart} starting={starting} onStart={onStart} />
       )}
 
       <EvaluationDetailDates evaluation={evaluation} />

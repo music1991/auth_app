@@ -2,26 +2,27 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Loader2,
-  UserPlus,
-  CheckCircle2,
+  ArrowLeft,
+  Ban,
   BarChart3,
-  Trash2,
-  Send,
-  ClipboardList,
+  Calendar,
+  CheckCircle2,
   ChevronRight,
-  AlertCircle,
-  PlayCircle,
+  ClipboardList,
   Clock3,
   FileText,
+  Loader2,
+  PlayCircle,
+  Send,
+  AlertCircle,
   Target,
-  Ban,
-  ArrowLeft,
-  Calendar,
+  Trash2,
+  UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
+import { normalizeUrl, getResourceTypeLabel } from "@/lib/utils";
 
-interface User {
+interface AdminManagedUser {
   id: string;
   name: string | null;
   lastName: string | null;
@@ -79,11 +80,8 @@ interface UserTaskDetail {
 function parseTaskDetails(details: UserTaskDetail["details"]): UserTaskDetails {
   if (!details) return {};
   if (typeof details === "string") {
-    try {
-      return JSON.parse(details);
-    } catch {
-      return {};
-    }
+    try { return JSON.parse(details); }
+    catch { return {}; }
   }
   return details;
 }
@@ -91,62 +89,174 @@ function parseTaskDetails(details: UserTaskDetail["details"]): UserTaskDetails {
 function getTaskStatusUI(status: TaskStatus) {
   switch (status) {
     case "pending":
-      return {
-        label: "Pendiente",
-        icon: AlertCircle,
-        badge: "bg-amber-100 text-amber-700 border-amber-200",
-        bar: "bg-amber-500",
-      };
+      return { label: "Pendiente", icon: AlertCircle, badge: "bg-amber-100 text-amber-700 border-amber-200", bar: "bg-amber-500" };
     case "in-progress":
-      return {
-        label: "En progreso",
-        icon: PlayCircle,
-        badge: "bg-blue-100 text-blue-700 border-blue-200",
-        bar: "bg-blue-500",
-      };
+      return { label: "En progreso", icon: PlayCircle, badge: "bg-blue-100 text-blue-700 border-blue-200", bar: "bg-blue-500" };
     case "completed":
-      return {
-        label: "Completada",
-        icon: CheckCircle2,
-        badge: "bg-emerald-100 text-emerald-700 border-emerald-200",
-        bar: "bg-emerald-500",
-      };
+      return { label: "Completada", icon: CheckCircle2, badge: "bg-emerald-100 text-emerald-700 border-emerald-200", bar: "bg-emerald-500" };
     default:
-      return {
-        label: "Pendiente",
-        icon: AlertCircle,
-        badge: "bg-gray-100 text-gray-700 border-gray-200",
-        bar: "bg-gray-400",
-      };
+      return { label: "Pendiente", icon: AlertCircle, badge: "bg-gray-100 text-gray-700 border-gray-200", bar: "bg-gray-400" };
   }
 }
 
-function normalizeUrl(url?: string) {
-  if (!url) return "#";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `https://${url}`;
+function formatDate(val: string | null | undefined) {
+  return val
+    ? new Date(val).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
+    : "—";
 }
 
-function getResourceTypeLabel(type?: string) {
-  if (!type) return "Recurso";
+function TaskDetailView({
+  task,
+  onBack,
+}: {
+  task: UserTaskDetail;
+  onBack: () => void;
+}) {
+  const details = parseTaskDetails(task.details);
+  const statusUI = getTaskStatusUI(task.status);
+  const StatusIcon = statusUI.icon;
 
-  switch (type.toLowerCase()) {
-    case "pdf":
-      return "PDF";
-    case "link":
-      return "Link";
-    case "video":
-      return "Video";
-    case "doc":
-    case "document":
-      return "Documento";
-    default:
-      return type;
-  }
+  return (
+    <div className="space-y-6">
+      <div className="border-b border-gray-100 pb-5">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-4 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+        >
+          <ArrowLeft size={16} />
+          Volver al usuario
+        </button>
+
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${statusUI.badge}`}>
+              <StatusIcon size={14} />
+              {statusUI.label}
+            </span>
+            <h4 className="mt-2 text-3xl font-semibold text-gray-900">{task.title}</h4>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">{task.description}</p>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-sm">
+            <div className="flex items-center gap-2 text-gray-700">
+              <Target size={16} className="text-green-600" />
+              <span className="font-medium">Avance actual</span>
+            </div>
+            <p className="mt-1 text-3xl font-bold text-gray-900">{task.progress ?? 0}%</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+            <Calendar size={16} className="text-blue-600" />
+            Fecha límite
+          </div>
+          <p className="text-sm text-gray-900">{formatDate(task.due_date)}</p>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+            <Clock3 size={16} className="text-violet-600" />
+            Horas estimadas
+          </div>
+          <p className="text-sm text-gray-900">
+            {details.estimatedHours ? `${details.estimatedHours}h` : "—"}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+            <FileText size={16} className="text-amber-600" />
+            Tipo
+          </div>
+          <p className="text-sm capitalize text-gray-900">{details.type || "—"}</p>
+        </div>
+      </div>
+
+      {details.instructions && (
+        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+          <h5 className="mb-2 font-medium text-gray-900">Instrucciones</h5>
+          <p className="text-sm leading-6 text-gray-600">{details.instructions}</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4">
+          <h5 className="mb-3 font-medium text-gray-900">Recursos</h5>
+          {task.resources && task.resources.length > 0 ? (
+            <ul className="space-y-2">
+              {task.resources.map((resource) => (
+                <li key={resource.id}>
+                  <a
+                    href={normalizeUrl(resource.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-sm transition hover:border-gray-300 hover:bg-white"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-gray-900">{resource.name}</p>
+                      <p className="mt-1 truncate text-xs text-gray-500">{resource.url}</p>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium uppercase text-gray-600">
+                      {getResourceTypeLabel(resource.type)}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-500">No hay recursos asociados a esta tarea.</p>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-4">
+          <h5 className="mb-4 font-medium text-gray-900">Resumen de progreso</h5>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">Progreso</span>
+            <span className="text-sm font-semibold text-gray-900">{task.progress ?? 0}%</span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-gray-100">
+            <div
+              className={`h-full rounded-full ${statusUI.bar}`}
+              style={{ width: `${task.progress ?? 0}%` }}
+            />
+          </div>
+          {details.userNotes && (
+            <div className="mt-4 rounded-xl bg-gray-50 p-3">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                Notas del usuario
+              </p>
+              <p className="text-sm text-gray-700">{details.userNotes}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Asignada</p>
+            <p className="mt-1 text-sm text-gray-900">{formatDate(task.assigned_date)}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Completada</p>
+            <p className="mt-1 text-sm text-gray-900">{formatDate(task.completed_date)}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Asignada por</p>
+            <p className="mt-1 text-sm text-gray-900">{task.assigned_by_name || "—"}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function AdminUserManagement() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminManagedUser[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -155,8 +265,7 @@ export default function AdminUserManagement() {
 
   const [userTasks, setUserTasks] = useState<UserTaskListItem[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [selectedTaskDetail, setSelectedTaskDetail] =
-    useState<UserTaskDetail | null>(null);
+  const [selectedTaskDetail, setSelectedTaskDetail] = useState<UserTaskDetail | null>(null);
   const [taskDetailError, setTaskDetailError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"user" | "task">("user");
 
@@ -164,22 +273,15 @@ export default function AdminUserManagement() {
     try {
       setLoading(true);
       setError(null);
-
-      const res = await fetch("/api/dashboard/admin/users", {
-        cache: "no-store",
-      });
-
+      const res = await fetch("/api/dashboard/admin/users", { cache: "no-store" });
       if (!res.ok) throw new Error("No se pudieron cargar los usuarios");
-
       const data = await res.json();
       setUsers(data);
-
-      if (data.length > 0 && !selectedUserId) {
-        setSelectedUserId(data[0].id);
-      }
-    } catch (e: any) {
-      setError(e.message);
-      toast.error(e.message);
+      if (data.length > 0 && !selectedUserId) setSelectedUserId(data[0].id);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error inesperado";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -188,24 +290,16 @@ export default function AdminUserManagement() {
   const loadTasksForUser = async (userId: string) => {
     try {
       setTasksLoading(true);
-
-      const res = await fetch(`/api/dashboard/admin/users/${userId}/tasks`, {
-        cache: "no-store",
-      });
-
-      if (!res.ok) {
-        throw new Error("No se pudieron cargar las tareas del usuario");
-      }
-
+      const res = await fetch(`/api/dashboard/admin/users/${userId}/tasks`, { cache: "no-store" });
+      if (!res.ok) throw new Error("No se pudieron cargar las tareas del usuario");
       const data = await res.json();
-      const tasks = data.tasks || [];
-
-      setUserTasks(tasks);
+      setUserTasks(data.tasks || []);
       setSelectedTaskId(null);
       setSelectedTaskDetail(null);
       setTaskDetailError(null);
-    } catch (e: any) {
-      toast.error(e.message || "No se pudieron cargar las tareas del usuario");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "No se pudieron cargar las tareas";
+      toast.error(msg);
       setUserTasks([]);
       setSelectedTaskId(null);
       setSelectedTaskDetail(null);
@@ -220,27 +314,16 @@ export default function AdminUserManagement() {
       setTaskDetailLoading(true);
       setTaskDetailError(null);
       setSelectedTaskDetail(null);
-
-      const res = await fetch(
-        `/api/dashboard/admin/users/${userId}/tasks/${taskId}`,
-        {
-          cache: "no-store",
-        }
-      );
-
+      const res = await fetch(`/api/dashboard/admin/users/${userId}/tasks/${taskId}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "No se pudo cargar el detalle de la tarea");
-      }
-
+      if (!res.ok) throw new Error(data.error || "No se pudo cargar el detalle de la tarea");
       setSelectedTaskDetail(data.task);
-    } catch (e: any) {
-      setSelectedTaskDetail(null);
-      setTaskDetailError(
-        e.message || "No se pudo cargar el detalle de la tarea"
-      );
-      toast.error(e.message || "No se pudo cargar el detalle de la tarea");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "No se pudo cargar el detalle de la tarea";
+      setTaskDetailError(msg);
+      toast.error(msg);
     } finally {
       setTaskDetailLoading(false);
     }
@@ -251,13 +334,12 @@ export default function AdminUserManagement() {
   }, []);
 
   useEffect(() => {
-    if (selectedUserId) {
-      setViewMode("user");
-      setSelectedTaskId(null);
-      setSelectedTaskDetail(null);
-      setTaskDetailError(null);
-      loadTasksForUser(selectedUserId);
-    }
+    if (!selectedUserId) return;
+    setViewMode("user");
+    setSelectedTaskId(null);
+    setSelectedTaskDetail(null);
+    setTaskDetailError(null);
+    loadTasksForUser(selectedUserId);
   }, [selectedUserId]);
 
   const selectedUser = useMemo(
@@ -265,7 +347,7 @@ export default function AdminUserManagement() {
     [users, selectedUserId]
   );
 
-  const getStatusUI = (status: User["status"]) => {
+  const getStatusUI = (status: AdminManagedUser["status"]) => {
     const isActive = status === "active";
     return {
       bg: isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600",
@@ -274,14 +356,8 @@ export default function AdminUserManagement() {
     };
   };
 
-  const formatDate = (val: string | null | undefined) =>
-    val
-      ? new Date(val).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
-      : "—";
-
   const openTaskDetail = async (taskId: string) => {
     if (!selectedUserId) return;
-
     setSelectedTaskId(taskId);
     setViewMode("task");
     await loadTaskDetail(selectedUserId, taskId);
@@ -298,9 +374,7 @@ export default function AdminUserManagement() {
     return (
       <div className="flex h-96 flex-col items-center justify-center space-y-4">
         <Loader2 className="h-10 w-10 animate-spin text-green-600" />
-        <p className="animate-pulse text-gray-500">
-          Sincronizando panel de control...
-        </p>
+        <p className="animate-pulse text-gray-500">Sincronizando panel de control...</p>
       </div>
     );
   }
@@ -346,9 +420,7 @@ export default function AdminUserManagement() {
                     </h3>
                     <p className="truncate text-xs text-gray-500">{user.email}</p>
                   </div>
-                  <span
-                    className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${ui.bg}`}
-                  >
+                  <span className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${ui.bg}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${ui.dot}`} />
                     {ui.label}
                   </span>
@@ -361,9 +433,7 @@ export default function AdminUserManagement() {
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
                     <div
-                      className={`h-full transition-all duration-500 ${
-                        progress > 70 ? "bg-green-500" : "bg-amber-500"
-                      }`}
+                      className={`h-full transition-all duration-500 ${progress > 70 ? "bg-green-500" : "bg-amber-500"}`}
                       style={{ width: `${progress}%` }}
                     />
                   </div>
@@ -388,9 +458,7 @@ export default function AdminUserManagement() {
                           {selectedUser.name} {selectedUser.lastName}
                         </h3>
                         <div className="mt-1 flex items-center gap-2">
-                          <span className="text-sm text-gray-500">
-                            {selectedUser.email}
-                          </span>
+                          <span className="text-sm text-gray-500">{selectedUser.email}</span>
                           <span className="h-1 w-1 rounded-full bg-gray-300" />
                           <span className="text-xs font-semibold uppercase tracking-tighter text-purple-600">
                             {selectedUser.role}
@@ -416,34 +484,22 @@ export default function AdminUserManagement() {
                       </h4>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                          <p className="mb-1 text-xs font-medium text-blue-600">
-                            Tareas Totales
-                          </p>
-                          <p className="text-2xl font-bold text-blue-900">
-                            {selectedUser.tasksAssigned}
-                          </p>
+                          <p className="mb-1 text-xs font-medium text-blue-600">Tareas Totales</p>
+                          <p className="text-2xl font-bold text-blue-900">{selectedUser.tasksAssigned}</p>
                         </div>
                         <div className="rounded-2xl border border-green-100 bg-green-50 p-4">
-                          <p className="mb-1 text-xs font-medium text-green-600">
-                            Completadas
-                          </p>
-                          <p className="text-2xl font-bold text-green-900">
-                            {selectedUser.tasksCompleted}
-                          </p>
+                          <p className="mb-1 text-xs font-medium text-green-600">Completadas</p>
+                          <p className="text-2xl font-bold text-green-900">{selectedUser.tasksCompleted}</p>
                         </div>
                       </div>
                       <div className="rounded-2xl border border-purple-100 bg-purple-50 p-4">
                         <div className="mb-2 flex items-center justify-between">
-                          <p className="text-xs font-medium text-purple-600">
-                            Score de Productividad
-                          </p>
+                          <p className="text-xs font-medium text-purple-600">Score de Productividad</p>
                           <BarChart3 size={16} className="text-purple-400" />
                         </div>
                         <p className="text-3xl font-black text-purple-900">
                           {selectedUser.productivityScore}
-                          <span className="text-sm font-normal text-purple-500">
-                            /100
-                          </span>
+                          <span className="text-sm font-normal text-purple-500">/100</span>
                         </p>
                       </div>
                     </section>
@@ -458,12 +514,8 @@ export default function AdminUserManagement() {
                             <CheckCircle2 size={18} />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              Último Login
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(selectedUser.lastLogin)}
-                            </p>
+                            <p className="text-sm font-medium text-gray-900">Último Login</p>
+                            <p className="text-xs text-gray-500">{formatDate(selectedUser.lastLogin)}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -471,12 +523,8 @@ export default function AdminUserManagement() {
                             <Send size={18} />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              Visto por última vez
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(selectedUser.lastSeen)}
-                            </p>
+                            <p className="text-sm font-medium text-gray-900">Visto por última vez</p>
+                            <p className="text-xs text-gray-500">{formatDate(selectedUser.lastSeen)}</p>
                           </div>
                         </div>
                       </div>
@@ -484,8 +532,8 @@ export default function AdminUserManagement() {
                       <div className="space-y-3 pt-4">
                         <button
                           disabled
+                          title="Esta acción se gestiona desde la pestaña de asignación de tareas"
                           className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-gray-200 py-3 font-medium text-gray-500"
-                          title="Esta acción se gestionará desde la pestaña de asignación de tareas"
                         >
                           <Ban size={16} />
                           Asignar Nueva Tarea
@@ -499,12 +547,9 @@ export default function AdminUserManagement() {
 
                   <div className="mt-8 border-t border-gray-100 pt-8">
                     <div className="mb-5">
-                      <h4 className="text-lg font-semibold text-gray-900">
-                        Tareas asignadas
-                      </h4>
+                      <h4 className="text-lg font-semibold text-gray-900">Tareas asignadas</h4>
                       <p className="mt-1 text-sm text-gray-500">
-                        Visualiza el progreso y los detalles de las tareas del
-                        usuario.
+                        Visualiza el progreso y los detalles de las tareas del usuario.
                       </p>
                     </div>
 
@@ -523,9 +568,7 @@ export default function AdminUserManagement() {
                       <div className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
                         <div className="mb-4 flex items-center gap-2">
                           <ClipboardList size={18} className="text-green-600" />
-                          <h5 className="font-semibold text-gray-900">
-                            Lista de tareas
-                          </h5>
+                          <h5 className="font-semibold text-gray-900">Lista de tareas</h5>
                         </div>
 
                         <div className="space-y-3">
@@ -542,28 +585,18 @@ export default function AdminUserManagement() {
                               >
                                 <div className="mb-2 flex items-start justify-between gap-3">
                                   <div className="min-w-0">
-                                    <p className="truncate font-semibold text-gray-900">
-                                      {task.title}
-                                    </p>
-                                    <p className="mt-1 line-clamp-2 text-sm text-gray-500">
-                                      {task.description}
-                                    </p>
+                                    <p className="truncate font-semibold text-gray-900">{task.title}</p>
+                                    <p className="mt-1 line-clamp-2 text-sm text-gray-500">{task.description}</p>
                                   </div>
-
                                   <ChevronRight size={18} className="text-gray-400" />
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                  <span
-                                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${statusUI.badge}`}
-                                  >
+                                  <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${statusUI.badge}`}>
                                     <StatusIcon size={14} />
                                     {statusUI.label}
                                   </span>
-
-                                  <span className="text-xs font-medium text-gray-500">
-                                    {task.progress ?? 0}%
-                                  </span>
+                                  <span className="text-xs font-medium text-gray-500">{task.progress ?? 0}%</span>
                                 </div>
 
                                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
@@ -590,7 +623,6 @@ export default function AdminUserManagement() {
                     <ArrowLeft size={16} />
                     Volver al usuario
                   </button>
-
                   <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-gray-200 bg-gray-50">
                     <div className="flex items-center gap-3 text-gray-500">
                       <Loader2 className="h-5 w-5 animate-spin" />
@@ -608,214 +640,12 @@ export default function AdminUserManagement() {
                     <ArrowLeft size={16} />
                     Volver al usuario
                   </button>
-
                   <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                     {taskDetailError}
                   </div>
                 </div>
               ) : selectedTaskDetail ? (
-                (() => {
-                  const details = parseTaskDetails(selectedTaskDetail.details);
-                  const statusUI = getTaskStatusUI(selectedTaskDetail.status);
-                  const StatusIcon = statusUI.icon;
-
-                  return (
-                    <div className="space-y-6">
-                      <div className="border-b border-gray-100 pb-5">
-                        <button
-                          type="button"
-                          onClick={backToUserView}
-                          className="mb-4 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-                        >
-                          <ArrowLeft size={16} />
-                          Volver al usuario
-                        </button>
-
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div>
-                            <div className="mb-2">
-                              <span
-                                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${statusUI.badge}`}
-                              >
-                                <StatusIcon size={14} />
-                                {statusUI.label}
-                              </span>
-                            </div>
-
-                            <h4 className="text-3xl font-semibold text-gray-900">
-                              {selectedTaskDetail.title}
-                            </h4>
-                            <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
-                              {selectedTaskDetail.description}
-                            </p>
-                          </div>
-
-                          <div className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-sm">
-                            <div className="flex items-center gap-2 text-gray-700">
-                              <Target size={16} className="text-green-600" />
-                              <span className="font-medium">Avance actual</span>
-                            </div>
-                            <p className="mt-1 text-3xl font-bold text-gray-900">
-                              {selectedTaskDetail.progress ?? 0}%
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <Calendar size={16} className="text-blue-600" />
-                            Fecha límite
-                          </div>
-                          <p className="text-sm text-gray-900">
-                            {formatDate(selectedTaskDetail.due_date)}
-                          </p>
-                        </div>
-
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <Clock3 size={16} className="text-violet-600" />
-                            Horas estimadas
-                          </div>
-                          <p className="text-sm text-gray-900">
-                            {details.estimatedHours
-                              ? `${details.estimatedHours}h`
-                              : "—"}
-                          </p>
-                        </div>
-
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <FileText size={16} className="text-amber-600" />
-                            Tipo
-                          </div>
-                          <p className="text-sm capitalize text-gray-900">
-                            {details.type || "—"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {details.instructions && (
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                          <h5 className="mb-2 font-medium text-gray-900">
-                            Instrucciones
-                          </h5>
-                          <p className="text-sm leading-6 text-gray-600">
-                            {details.instructions}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                        <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                          <h5 className="mb-3 font-medium text-gray-900">
-                            Recursos
-                          </h5>
-
-                          {selectedTaskDetail.resources &&
-                          selectedTaskDetail.resources.length > 0 ? (
-                            <ul className="space-y-2">
-                              {selectedTaskDetail.resources.map((resource) => (
-                                <li key={resource.id}>
-                                  <a
-                                    href={normalizeUrl(resource.url)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-sm transition hover:border-gray-300 hover:bg-white"
-                                  >
-                                    <div className="min-w-0">
-                                      <p className="truncate font-medium text-gray-900">
-                                        {resource.name}
-                                      </p>
-                                      <p className="mt-1 truncate text-xs text-gray-500">
-                                        {resource.url}
-                                      </p>
-                                    </div>
-
-                                    <span className="shrink-0 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium uppercase text-gray-600">
-                                      {getResourceTypeLabel(resource.type)}
-                                    </span>
-                                  </a>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-gray-500">
-                              No hay recursos asociados a esta tarea.
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                          <h5 className="mb-4 font-medium text-gray-900">
-                            Resumen de progreso
-                          </h5>
-
-                          <div>
-                            <div className="mb-2 flex items-center justify-between">
-                              <span className="text-sm font-medium text-gray-700">
-                                Progreso
-                              </span>
-                              <span className="text-sm font-semibold text-gray-900">
-                                {selectedTaskDetail.progress ?? 0}%
-                              </span>
-                            </div>
-
-                            <div className="h-3 overflow-hidden rounded-full bg-gray-100">
-                              <div
-                                className={`h-full rounded-full ${statusUI.bar}`}
-                                style={{
-                                  width: `${selectedTaskDetail.progress ?? 0}%`,
-                                }}
-                              />
-                            </div>
-
-                            {details.userNotes && (
-                              <div className="mt-4 rounded-xl bg-gray-50 p-3">
-                                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                                  Notas del usuario
-                                </p>
-                                <p className="text-sm text-gray-700">
-                                  {details.userNotes}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                          <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                              Asignada
-                            </p>
-                            <p className="mt-1 text-sm text-gray-900">
-                              {formatDate(selectedTaskDetail.assigned_date)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                              Completada
-                            </p>
-                            <p className="mt-1 text-sm text-gray-900">
-                              {formatDate(selectedTaskDetail.completed_date)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                              Asignada por
-                            </p>
-                            <p className="mt-1 text-sm text-gray-900">
-                              {selectedTaskDetail.assigned_by_name || "—"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()
+                <TaskDetailView task={selectedTaskDetail} onBack={backToUserView} />
               ) : (
                 <div className="flex min-h-[400px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-center text-gray-500">
                   Selecciona una tarea para ver sus detalles.
@@ -827,12 +657,9 @@ export default function AdminUserManagement() {
               <div className="mb-4 rounded-2xl bg-white p-4 shadow-sm">
                 <Loader2 size={32} className="animate-pulse text-gray-300" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900">
-                Selecciona un miembro
-              </h3>
+              <h3 className="text-lg font-bold text-gray-900">Selecciona un miembro</h3>
               <p className="max-w-xs text-sm text-gray-500">
-                Haz clic en un usuario de la lista de la izquierda para ver su
-                rendimiento detallado.
+                Haz clic en un usuario de la lista de la izquierda para ver su rendimiento detallado.
               </p>
             </div>
           )}

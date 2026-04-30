@@ -1,15 +1,30 @@
-export default async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<string> {
+type PixelCrop = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export default async function getCroppedImg(
+  imageSrc: string,
+  pixelCrop: PixelCrop | null
+): Promise<string> {
   return new Promise((resolve, reject) => {
+    if (!pixelCrop) {
+      reject(new Error("No crop area provided"));
+      return;
+    }
+
     const image = new Image();
     image.src = imageSrc;
-    
+
     image.onload = () => {
       try {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
         if (!ctx) {
-          reject(new Error('Could not get canvas context'));
+          reject(new Error("Could not get canvas context"));
           return;
         }
 
@@ -17,7 +32,7 @@ export default async function getCroppedImg(imageSrc: string, pixelCrop: any): P
         canvas.height = pixelCrop.height;
 
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        ctx.imageSmoothingQuality = "high";
 
         ctx.drawImage(
           image,
@@ -31,19 +46,19 @@ export default async function getCroppedImg(imageSrc: string, pixelCrop: any): P
           pixelCrop.height
         );
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-        
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+
         if (dataUrl.length < 1000) {
-          reject(new Error('Cropped image is empty'));
+          reject(new Error("Cropped image is empty"));
           return;
         }
-        
+
         resolve(dataUrl);
       } catch (error) {
         reject(error);
       }
     };
-    
-    image.onerror = () => reject(new Error('Failed to load image for cropping'));
+
+    image.onerror = () => reject(new Error("Failed to load image for cropping"));
   });
 }

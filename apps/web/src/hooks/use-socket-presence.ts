@@ -3,21 +3,25 @@
 import { useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 
-const urlService = process.env.NEXT_PUBLIC_SERVICES_URL;
-const socketUrl = urlService?.replace('/api', '');
+type SocketUser = {
+  id: string | number;
+  name: string;
+  role: string;
+};
 
-console.log("🔗 Intentando conectar socket a:", socketUrl);
-export const socket: Socket = io(socketUrl, { 
-   path: "/socket.io/",
-  transports: ['polling', 'websocket'], 
+const socketUrl = process.env.NEXT_PUBLIC_SERVICES_URL?.replace("/api", "");
+
+export const socket: Socket = io(socketUrl, {
+  path: "/socket.io/",
+  transports: ["polling", "websocket"],
   autoConnect: false,
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 2000,
-  withCredentials: true
+  withCredentials: true,
 });
 
-function useSocketPresence(user: any) {
+function useSocketPresence(user: SocketUser | null) {
   useEffect(() => {
     if (!user?.id) {
       if (socket.connected) socket.disconnect();
@@ -25,21 +29,12 @@ function useSocketPresence(user: any) {
     }
 
     const onConnect = () => {
-      console.log("✅ Socket conectado. Enviando login para:", user.name);
-      socket.emit("user:login", {
-        id: user.id,
-        name: user.name,
-        role: user.role
-      });
+      socket.emit("user:login", { id: user.id, name: user.name, role: user.role });
     };
 
-    const onDisconnect = (reason: string) => {
-      console.log("❌ Socket desconectado. Motivo:", reason);
-    };
+    const onDisconnect = (_reason: string) => {};
 
-    const onConnectError = (err: any) => {
-      console.error("⚠️ Error de conexión Socket:", err.message);
-    };
+    const onConnectError = (_err: Error) => {};
 
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
@@ -59,7 +54,7 @@ function useSocketPresence(user: any) {
   }, [user?.id]);
 }
 
-export default function PresencePing({ user }: { user: any }) {
+export default function PresencePing({ user }: { user: SocketUser | null }) {
   useSocketPresence(user);
   return null;
 }

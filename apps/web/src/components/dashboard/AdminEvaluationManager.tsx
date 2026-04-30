@@ -1,26 +1,12 @@
 "use client";
 
-import { AdminUser, AssignmentUser, EvaluationTemplateItem, NewEvaluationFormData } from "@/app/types/types";
+import { AdminUser, EvaluationTemplateItem, NewEvaluationFormData } from "@/app/types/types";
 import { INITIAL_EVALUATION_FORM } from "@/lib/constants";
+import { buildAssignmentUsers } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { EvaluationCard } from "./EvaluationCard";
 import { CreateEvaluationForm } from "./CreateEvaluationForm";
 import { ManageAssignmentsModal } from "./ManageAssignmentsModal";
-
-
-function buildAssignmentUsers(
-  users: AdminUser[],
-  assignedUsers: AdminUser[],
-  selectedUserIds: string[]
-): AssignmentUser[] {
-  const assignedIds = new Set(assignedUsers.map((user) => user.id));
-
-  return users.map((user) => ({
-    ...user,
-    assigned: assignedIds.has(user.id),
-    selected: selectedUserIds.includes(user.id),
-  }));
-}
 
 export default function AdminEvaluationManager() {
   const [evaluations, setEvaluations] = useState<EvaluationTemplateItem[]>([]);
@@ -57,8 +43,8 @@ export default function AdminEvaluationManager() {
       const response = await fetch("/api/dashboard/admin/evaluation-templates");
       const data = await response.json();
       setEvaluations(data.evaluations || []);
-    } catch (error) {
-      console.error("Error cargando plantillas");
+    } catch {
+      // silencioso — el estado de evaluations queda vacío
     } finally {
       setLoading(false);
     }
@@ -69,14 +55,12 @@ export default function AdminEvaluationManager() {
       setUsersLoading(true);
       const response = await fetch("/api/dashboard/admin/users");
       const data = await response.json();
-
       const onlyUsers = Array.isArray(data)
         ? data.filter((user: AdminUser) => user.role === "user")
         : [];
-
       setUsers(onlyUsers);
-    } catch (error) {
-      console.error("Error cargando usuarios");
+    } catch {
+      setUsers([]);
     } finally {
       setUsersLoading(false);
     }
@@ -88,8 +72,7 @@ export default function AdminEvaluationManager() {
       const res = await fetch(`/api/dashboard/admin/evaluations/?templateId=${evaluationId}`);
       const data = await res.json();
       setAssignedUsers(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Error cargando asignados");
+    } catch {
       setAssignedUsers([]);
     } finally {
       setAssignedLoading(false);

@@ -51,8 +51,6 @@ export function EvaluationCard({
 
         <div className="flex justify-between border-t border-gray-50 pt-3 mb-4 text-center">
           <StatItem label="Asignados" value={evaluation.assignedUsers} />
-          {/* <StatItem label="Respuestas" value={evaluation.responses} />
-          <StatItem label="Progreso" value={`${evaluation.completionRate}%`} /> */}
         </div>
       </div>
 
