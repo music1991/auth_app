@@ -3,7 +3,7 @@ import type {
   EvaluationType,
   Mode,
   NewEvaluationFormData,
-} from "../app/types/types";
+} from "@/types";
 
 export const EVALUATION_TYPE_LABELS: Record<EvaluationType, string> = {
   environment: "Clima Laboral",

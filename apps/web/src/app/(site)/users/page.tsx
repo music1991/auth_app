@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import UsersTable from "@/components/UsersTable";
+import UsersTable from "@/components/shared/UsersTable";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 import { createAvatar, type Style } from "@dicebear/core";
 import { avataaars, bottts, pixelArt } from "@dicebear/collection";
-import getCroppedImg from "../helpers";
-import { dataUrlToBlob } from "../helpers/imageHelpers";
+import getCroppedImg, { dataUrlToBlob } from "@/helpers/image";
 
 type AvatarType = "avataaars" | "pixel-art" | "bottts";
 

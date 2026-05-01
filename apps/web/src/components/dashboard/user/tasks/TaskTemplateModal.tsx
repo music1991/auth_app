@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import type { TaskTemplate, TaskTemplatePayload } from "@/hooks/useTaskTemplates";
-import { resourceApi } from "@/services/resourceApi";
+import { resourceApi } from "@/services/resource";
 
 interface TaskTemplateModalProps {
   open: boolean;

@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { Users, ClipboardList, BarChart3, Shield, TrendingUp } from "lucide-react";
-import AdminUserManagement from "@/components/dashboard/AdminUserManagement";
-import AdminTaskAssignment from "@/components/dashboard/AdminTaskAssignment";
-import AdminEvaluationManager from "@/components/dashboard/AdminEvaluationManager";
-import AdminPerformanceDashboard from "@/components/dashboard/AdminPerformanceDashboard";
+import AdminUserManagement from "@/components/dashboard/admin/AdminUserManagement";
+import AdminTaskAssignment from "@/components/dashboard/admin/AdminTaskAssignment";
+import AdminEvaluationManager from "@/components/dashboard/admin/AdminEvaluationManager";
+import AdminPerformanceDashboard from "@/components/dashboard/admin/AdminPerformanceDashboard";
 
 const TABS = [
   { id: "users", label: "Gestión de Usuarios", icon: Users },

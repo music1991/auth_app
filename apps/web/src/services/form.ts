@@ -1,7 +1,7 @@
 const urlServer = process.env.NEXT_PUBLIC_SERVICES_URL;
 
-async function patchEvaluationStatus(evaluationId, status) {
-  const response = await fetch(`${urlServer}/form`, {
+async function patchEvaluationStatus(evaluationId: string, status: string): Promise<boolean> {
+  const response = await fetch(`${urlServer}/api/form`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ evaluationId, status }),
@@ -15,7 +15,7 @@ async function patchEvaluationStatus(evaluationId, status) {
   return true;
 }
 
-export const startEvaluation = async (evaluationId) => {
+export const startEvaluation = async (evaluationId: string): Promise<boolean> => {
   try {
     return await patchEvaluationStatus(evaluationId, "in_progress");
   } catch (error) {
@@ -24,7 +24,7 @@ export const startEvaluation = async (evaluationId) => {
   }
 };
 
-export const finishEvaluation = async (evaluationId) => {
+export const finishEvaluation = async (evaluationId: string): Promise<boolean> => {
   try {
     return await patchEvaluationStatus(evaluationId, "completed");
   } catch (error) {

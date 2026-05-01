@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { Navbar } from "@/components/Navbar";
+import { Navbar } from "@/components/layout/Navbar";
 import PresencePing from "@/hooks/use-socket-presence";
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {

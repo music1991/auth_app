@@ -1,6 +1,6 @@
 "use client";
 
-import PasswordField from "@/components/PasswordField";
+import PasswordField from "@/components/shared/PasswordField";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";

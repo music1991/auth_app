@@ -16,8 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AvatarChangeButton } from "@/components/AvatarChangeButton";
-import EditAvatar from "@/components/EditAvatar";
+import { AvatarChangeButton } from "@/components/profile/AvatarChangeButton";
+import EditAvatar from "@/components/profile/EditAvatar";
 
 type ApiUser = {
   id: string;

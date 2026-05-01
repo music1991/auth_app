@@ -12,12 +12,12 @@ import {
   PlayCircle,
 } from "lucide-react";
 
-import { finishEvaluation, startEvaluation } from "@/services/formServicesApi";
+import { finishEvaluation, startEvaluation } from "@/services/form";
 
 import { formatDateShort } from "@/lib/utils";
 import { EVALUATION_TYPE_LABELS } from "@/lib/constants";
-import { EvaluationType } from "@/app/types/types";
-import EvaluationFormModal from "./EvaluationFormModal";
+import { EvaluationType } from "@/types";
+import EvaluationFormModal from "../EvaluationFormModal";
 
 type EvaluationStatus = 'pending' | 'in_progress' | 'completed' | 'expired';
 

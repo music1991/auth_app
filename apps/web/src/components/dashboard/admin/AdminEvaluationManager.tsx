@@ -1,10 +1,10 @@
 "use client";
 
-import { AdminUser, EvaluationTemplateItem, NewEvaluationFormData } from "@/app/types/types";
+import { AdminUser, EvaluationTemplateItem, NewEvaluationFormData } from "@/types";
 import { INITIAL_EVALUATION_FORM } from "@/lib/constants";
 import { buildAssignmentUsers } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
-import { EvaluationCard } from "./EvaluationCard";
+import { EvaluationCard } from "../EvaluationCard";
 import { CreateEvaluationForm } from "./CreateEvaluationForm";
 import { ManageAssignmentsModal } from "./ManageAssignmentsModal";
 

@@ -4,8 +4,8 @@ import { ToastContainer } from "react-toastify";
 import styled, { keyframes, css } from "styled-components";
 
 // --- IMPORTS DE TUS NUEVOS ARCHIVOS ---
-import { useEditAvatar } from "../hooks/useEditAvatar";
-import { Icons } from "@/lib/EditAvatarIcons";
+import { useEditAvatar } from "@/hooks/useEditAvatar";
+import { Icons } from "@/components/profile/EditAvatarIcons";
 
 
 interface EditAvatarProps {

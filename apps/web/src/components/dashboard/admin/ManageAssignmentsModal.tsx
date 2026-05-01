@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo } from "react";
 
-import { BaseModal } from "../BaseModal";
-import { AssignmentUser } from "@/app/types/types";
+import { BaseModal } from "@/components/shared/BaseModal";
+import { AssignmentUser } from "@/types";
 import { normalizeDateInput } from "@/lib/utils";
 
 interface ManageAssignmentsModalProps {

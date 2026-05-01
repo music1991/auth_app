@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import PasswordField from "@/components/PasswordField";
-import RequirementsList from "@/components/RequirementsList";
-import Count from "@/components/Count";
+import PasswordField from "@/components/shared/PasswordField";
+import RequirementsList from "@/components/shared/RequirementsList";
+import Count from "@/components/shared/Count";
 
 
 export default function RegisterPage() {

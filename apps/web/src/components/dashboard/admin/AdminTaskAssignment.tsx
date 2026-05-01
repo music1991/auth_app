@@ -7,7 +7,7 @@ import {
   type TaskTemplate,
   type TaskTemplatePayload,
 } from "@/hooks/useTaskTemplates";
-import TaskTemplateModal from "./tasks/TaskTemplateModal";
+import TaskTemplateModal from "../user/tasks/TaskTemplateModal";
 
 type AssignedTaskStatus = "pending" | "in-progress" | "completed";
 

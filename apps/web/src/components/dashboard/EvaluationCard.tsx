@@ -4,7 +4,7 @@ import { formatDateShort } from "@/lib/utils";
 
 import { StatItem } from "./StatItem";
 import { EVALUATION_TYPE_LABELS, MODE, TEMPLATE_STATUS_LABELS } from "@/lib/constants";
-import { EvaluationTemplateItem } from "@/app/types/types";
+import { EvaluationTemplateItem } from "@/types";
 
 interface EvaluationCardProps {
   evaluation: EvaluationTemplateItem;

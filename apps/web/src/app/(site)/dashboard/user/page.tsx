@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { BarChart3, ClipboardList, TrendingUp } from "lucide-react";
-import UserTasksPanel from "@/components/dashboard/UserTasksPanel";
-import UserEvaluationsPanel from "@/components/dashboard/UserEvaluationsPanel";
-import UserPerformanceDashboard from "@/components/dashboard/UserPerformanceDashboard";
+import UserTasksPanel from "@/components/dashboard/user/UserTasksPanel";
+import UserEvaluationsPanel from "@/components/dashboard/user/UserEvaluationsPanel";
+import UserPerformanceDashboard from "@/components/dashboard/user/UserPerformanceDashboard";
 
 const TABS = [
   { id: "tasks", label: "Mis tareas", icon: ClipboardList },

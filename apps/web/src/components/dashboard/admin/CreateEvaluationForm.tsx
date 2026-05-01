@@ -1,6 +1,6 @@
 "use client";
 
-import { EvaluationType, NewEvaluationFormData } from "@/app/types/types";
+import { EvaluationType, NewEvaluationFormData } from "@/types";
 import { extractGoogleFormId } from "@/lib/utils";
 
 

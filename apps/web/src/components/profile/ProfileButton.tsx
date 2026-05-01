@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { User, LogOut, Settings } from "lucide-react";
-import { ClientLogoutButton } from "./ClientLogoutButton";
+import { ClientLogoutButton } from "../shared/ClientLogoutButton";
 
 export function ProfileButton() {
   const [isOpen, setIsOpen] = useState(false);

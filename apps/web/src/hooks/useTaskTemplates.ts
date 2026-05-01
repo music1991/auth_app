@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { TaskType } from "@/app/types/types";
+import type { TaskType } from "@/types";
 
 export interface TaskTemplate {
   id: string;

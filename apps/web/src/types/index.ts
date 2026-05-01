@@ -74,7 +74,6 @@ export interface TaskTemplate {
   created_at: string;
 }
 
-
 export type EvaluationType = "environment" | "performance" | "skills";
 export type EvaluationTemplateStatus = "draft" | "active" | "completed";
 export type EvaluationAssignmentStatus = "pending" | "in_progress" | "completed" | "expired";

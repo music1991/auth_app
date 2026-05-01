@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import UserPerformanceStats from "@/components/dashboard/UserPerformanceStats";
-import UserPerformanceSummary from "@/components/dashboard/UserPerformanceSummary";
+import UserPerformanceStats from "@/components/dashboard/user/UserPerformanceStats";
+import UserPerformanceSummary from "@/components/dashboard/user/UserPerformanceSummary";
 
 export default function UserPerformanceDashboard() {
   const [period, setPeriod] = useState("30d");

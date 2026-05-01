@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 
 import { findValidResetByToken } from "@/lib/forgot-password";
-import ResetPasswordForm from "@/components/ResetPasswordForm";
+import ResetPasswordForm from "@/components/shared/ResetPasswordForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

@@ -1,4 +1,4 @@
-import { AdminUser, AssignmentUser } from "@/app/types/types";
+import { AdminUser, AssignmentUser } from "@/types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import PasswordField from "@/components/PasswordField";
+import PasswordField from "@/components/shared/PasswordField";
 import RequirementsList from "./RequirementsList";
 
 

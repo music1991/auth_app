@@ -1,14 +1,7 @@
 import { sql } from "./db";
-import { AdminStats, DashboardTask, DashboardTaskListItem, UserStats, UserWithMetrics } from "@/app/types/types";
-
-// --- TYPES ---
-// (Mantenemos tus tipos igual, omitidos aquí por brevedad para ir a la lógica)
+import { AdminStats, DashboardTask, DashboardTaskListItem, User, UserRole, UserStats, UserWithMetrics } from "@/types";
 
 export const dashboardDb = {
-  // ==========================================
-  // SECTION: USER STATS & TASKS
-  // ==========================================
-  
   async getUserStats(userId: string): Promise<UserStats> {
     const rows = await sql<{
       pending_tasks: number;
@@ -23,9 +16,9 @@ export const dashboardDb = {
         COUNT(t.id) FILTER (WHERE t.status = 'in-progress') as in_progress_tasks,
         COUNT(t.id) FILTER (WHERE t.status = 'completed') as completed_tasks,
         COALESCE((
-          SELECT SUM(duration) 
-          FROM work_sessions ws 
-          WHERE ws.user_id = ${userId} AND DATE(ws.start_time) = CURRENT_DATE
+          SELECT SUM(duration)
+          FROM work_sessions ws
+          WHERE ws.user_id = ${userId} AND ws.session_date = CURRENT_DATE
         ), 0) as today_work_seconds,
         COUNT(e.id) FILTER (WHERE e.status = 'pending') as pending_evaluations,
         COALESCE((
@@ -112,19 +105,9 @@ async getUserTaskById(
           )
           FROM resources r
           WHERE r.id IN (
-  SELECT id FROM (
-    SELECT
-      CASE
-        WHEN jsonb_typeof(value) = 'number' THEN (value::text)::int
-        WHEN jsonb_typeof(value) = 'string'
-          AND trim(both '"' from value::text) ~ '^[0-9]+$'
-        THEN (trim(both '"' from value::text))::int
-        ELSE NULL
-      END AS id
-    FROM jsonb_array_elements(COALESCE(tt.requirements, '[]'::jsonb)) AS value
-  ) sub
-  WHERE id IS NOT NULL
-)
+            SELECT (trim(both '"' from value::text))::uuid
+            FROM jsonb_array_elements(COALESCE(tt.requirements, '[]'::jsonb)) AS value
+          )
         ),
         '[]'::json
       ) AS resources
@@ -171,18 +154,8 @@ async getAdminUserTaskById(
           )
           FROM resources r
           WHERE r.id IN (
-            SELECT id FROM (
-              SELECT
-                CASE
-                  WHEN jsonb_typeof(value) = 'number' THEN (value::text)::int
-                  WHEN jsonb_typeof(value) = 'string'
-                    AND trim(both '"' from value::text) ~ '^[0-9]+$'
-                  THEN (trim(both '"' from value::text))::int
-                  ELSE NULL
-                END AS id
-              FROM jsonb_array_elements(COALESCE(tt.requirements, '[]'::jsonb)) AS value
-            ) sub
-            WHERE id IS NOT NULL
+            SELECT (trim(both '"' from value::text))::uuid
+            FROM jsonb_array_elements(COALESCE(tt.requirements, '[]'::jsonb)) AS value
           )
         ),
         '[]'::json
@@ -208,30 +181,8 @@ async getAdminUserTaskById(
     `;
   },
 
-  // ==========================================
-  // SECTION: WORK SESSIONS
-  // ==========================================
-
-  async startWorkSession(userId: string): Promise<string> {
-    const rows = await sql<{ id: string }>`
-      INSERT INTO work_sessions (user_id, start_time, active)
-      VALUES (${userId}, CURRENT_TIMESTAMP, true) RETURNING id
-    `;
-    return rows[0].id;
-  },
-
-  async endWorkSession(sessionId: string): Promise<void> {
-    await sql`
-      UPDATE work_sessions 
-      SET end_time = CURRENT_TIMESTAMP,
-          duration = EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_time)),
-          active = false
-      WHERE id = ${sessionId}
-    `;
-  },
-
-  async getAllUsers(): Promise<any[]> {
-    const rows = await sql<any>`
+  async getAllUsers(): Promise<User[]> {
+    const rows = await sql<User>`
       SELECT 
         id, 
         name,
@@ -245,12 +196,15 @@ async getAdminUserTaskById(
     return rows;
   },
 
-  // ==========================================
-  // SECTION: ADMIN & METRICS (AJUSTADA)
-  // ==========================================
-
   async getAdminStats(): Promise<AdminStats> {
-    const rows = await sql<any>`
+    const rows = await sql<{
+      total_users: number;
+      active_users: number;
+      pending_tasks: number;
+      completed_tasks: number;
+      pending_evaluations: number;
+      avg_rate: number;
+    }>`
       SELECT
         (SELECT COUNT(*) FROM users) as total_users,
         (SELECT COUNT(DISTINCT user_id) FROM work_sessions WHERE session_date >= CURRENT_DATE - 7) as active_users,
@@ -270,49 +224,55 @@ async getAdminUserTaskById(
     };
   },
 
-  /**
-   * ESTA ES LA FUNCIÓN QUE CAUSABA EL 500
-   * Ajustada para que coincida con formatUser de tu API
-   */
   async getUsersWithMetrics(): Promise<UserWithMetrics[]> {
-    const rows = await sql<any>`
-      SELECT 
+    const rows = await sql<{
+      id: string;
+      name: string;
+      email: string;
+      role: UserRole;
+      verified: boolean;
+      created_at: string;
+      tasks_assigned: number;
+      tasks_completed: number;
+      productivity_score: number;
+    }>`
+      SELECT
         u.id,
         u.name,
         u.email,
         u.role,
+        u.verified,
         u.created_at,
         COUNT(t.id) as tasks_assigned,
         COUNT(t.id) FILTER (WHERE t.status = 'completed') as tasks_completed,
         COALESCE((
-          SELECT pm.productivity_score 
-          FROM productivity_metrics pm 
-          WHERE pm.user_id = u.id AND pm.date = CURRENT_DATE 
+          SELECT pm.productivity_score
+          FROM productivity_metrics pm
+          WHERE pm.user_id = u.id AND pm.date = CURRENT_DATE
           ORDER BY pm.created_at DESC LIMIT 1
         ), 0) as productivity_score
       FROM users u
       LEFT JOIN tasks t ON t.user_id = u.id
       WHERE u.role = 'user'
-      GROUP BY u.id, u.name, u.email, u.role, u.created_at
+      GROUP BY u.id, u.name, u.email, u.role, u.verified, u.created_at
       ORDER BY u.created_at DESC
     `;
-    return rows;
+    return rows.map((row) => ({
+      ...row,
+      status: "inactive" as const,
+      last_login: null,
+      last_seen: null,
+    }));
   },
 
-  // ==========================================
-  // SECTION: TEMPLATES & ASSIGNMENTS
-  // ==========================================
-
-/*   async assignTask(task: any) {
-    const rows = await sql<{ id: string }>`
-      INSERT INTO tasks (template_id, user_id, assigned_by, title, description, due_date, details)
-      VALUES (${task.templateId}, ${task.userId}, ${task.assignedBy}, ${task.title}, ${task.description}, ${task.dueDate}, ${task.details})
-      RETURNING id
-    `;
-    return rows[0].id;
-  }, */
-
-  async updateProductivityMetric(metric: any) {
+  async updateProductivityMetric(metric: {
+    userId: string;
+    date: string;
+    tasksCompleted: number;
+    tasksAssigned: number;
+    totalWorkTime: number;
+    productivityScore: number;
+  }) {
     await sql`
       INSERT INTO productivity_metrics (user_id, date, tasks_completed, tasks_assigned, total_work_time, productivity_score)
       VALUES (${metric.userId}, ${metric.date}, ${metric.tasksCompleted}, ${metric.tasksAssigned}, ${metric.totalWorkTime}, ${metric.productivityScore})
@@ -327,7 +287,7 @@ async getAdminUserTaskById(
 async updateUserAvatar(userId: string, buffer: Buffer, mimeType: string) {
   const rows = await sql`
     INSERT INTO data_user (user_id, first_name, last_name, avatar_blob, avatar_mime)
-    VALUES (${userId}, '', '', ${buffer}, ${mimeType}) -- Verifica que mimeType no sea null aquí
+    VALUES (${userId}, '', '', ${buffer}, ${mimeType})
     ON CONFLICT (user_id) DO UPDATE SET
       avatar_blob = EXCLUDED.avatar_blob,
       avatar_mime = EXCLUDED.avatar_mime,
@@ -473,7 +433,7 @@ async getUserAvatar(userId: string) {
   title: string;
   description: string;
   dueDate: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }) {
   const rows = await sql<{ id: string }>`
     INSERT INTO tasks (
@@ -534,7 +494,7 @@ async getAssignedTasksForAdmin() {
   `;
 
   return rows.map((row) => {
-    let parsedDetails: any = {};
+    let parsedDetails: Record<string, unknown> = {};
 
     if (row.details) {
       try {
@@ -565,7 +525,7 @@ async getTaskById(taskId: string) {
     user_id: string;
     status: string;
     progress: number;
-    details: any;
+    details: Record<string, unknown> | null;
   }>`
     SELECT id, user_id, status, progress, details
     FROM tasks
@@ -585,7 +545,7 @@ async updateUserTask(
   }
 ) {
   const rows = await sql<{
-    details: any;
+    details: Record<string, unknown> | null;
   }>`
     SELECT details
     FROM tasks
@@ -595,7 +555,7 @@ async updateUserTask(
 
   const currentTask = rows[0];
 
-  let currentDetails: any = {};
+  let currentDetails: Record<string, unknown> = {};
 
   if (currentTask?.details) {
     try {
@@ -857,17 +817,6 @@ async getUserEvaluations(userId: string) {
     online: row.online
   }));
 },
-
-/* async startEvaluation(evaluationId: string, userId: string) {
-  await sql`
-    UPDATE evaluations
-    SET
-      status = 'in-progress',
-      updated_at = CURRENT_TIMESTAMP
-    WHERE id = ${evaluationId}
-      AND user_id = ${userId}
-  `;
-}, */
 
 async submitEvaluation(data: {
   evaluationId: string;
