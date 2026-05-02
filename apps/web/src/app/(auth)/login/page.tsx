@@ -63,8 +63,13 @@ export default function LoginPage() {
   };
 
   const userAdmin = {
-    email: "admin@gmail.com",
-    password: "admin"
+    email: "carlos@teamsimprove.com",
+    password: "Admin2024!"
+  };
+
+  const userNormal = {
+    email: "lucia@teamsimprove.com",
+    password: "User2024!"
   };
 
 
@@ -174,16 +179,16 @@ export default function LoginPage() {
           </div>
           <span>
             <span className="font-medium">Email:</span>{" "}
-            <code className="font-mono">{"sebastians201991@gmail.com"}</code>{" "}
+            <code className="font-mono">{userNormal.email}</code>{" "}
           </span>
           <span>
             <span className="font-medium">Password:</span>{" "}
-            <code className="font-mono">{"Practicante.1"}</code>
+            <code className="font-mono">{userNormal.password}</code>
           </span>
         </div>
         <button
           type="button"
-          onClick={() => setForm({ email: "sebastians201991@gmail.com", password: "Practicante.1" })}
+          onClick={() => setForm({ email: userNormal.email, password: userNormal.password })}
           className="mt-3 bg-green-200 hover:bg-green-300 text-green-800 px-4 py-2 rounded-md transition-all duration-200 active:scale-95 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
           suppressHydrationWarning
