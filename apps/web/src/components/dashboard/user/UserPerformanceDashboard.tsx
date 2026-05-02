@@ -8,7 +8,7 @@ export default function UserPerformanceDashboard() {
   const [period, setPeriod] = useState("30d");
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
+    <div className="space-y-8">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Mi desempeño</h2>

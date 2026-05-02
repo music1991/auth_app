@@ -21,7 +21,7 @@ export default function UserDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30">
-      <div className="px-4 py-6 sm:px-6">
+      <div className="px-8 py-8 sm:px-10 lg:px-14">
         <div className="mb-6">
           <h1 className="bg-gradient-to-r from-gray-900 to-green-600 bg-clip-text text-3xl font-bold text-transparent">
             Mi Panel
@@ -29,21 +29,21 @@ export default function UserDashboardPage() {
           <p className="mt-1 text-gray-600">Consultá tus tareas, evaluaciones y formación</p>
         </div>
 
-        {/* Tab bar — horizontal scroll en mobile */}
-        <div className="mb-6 overflow-x-auto">
-          <div className="inline-flex min-w-full rounded-2xl border border-gray-200 bg-white/80 p-1 backdrop-blur-sm sm:min-w-0">
+        {/* Tab bar */}
+        <div className="mb-6">
+          <div className="flex w-full rounded-2xl border border-gray-200 bg-white/80 p-1 backdrop-blur-sm">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
-                className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 sm:px-6 sm:py-3 ${
+                className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                   activeTab === id
                     ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25"
                     : "text-gray-600 hover:bg-white hover:text-gray-900"
                 }`}
               >
                 <Icon size={16} />
-                {label}
+                <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
           </div>

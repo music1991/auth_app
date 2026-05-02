@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  AlertCircle,
   ArrowLeft,
   Ban,
   BarChart3,
@@ -14,9 +15,10 @@ import {
   Loader2,
   PlayCircle,
   Send,
-  AlertCircle,
   Target,
   Trash2,
+  UserPlus,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { normalizeUrl, getResourceTypeLabel } from "@/lib/utils";
@@ -268,6 +270,39 @@ export default function AdminUserManagement() {
   const [taskDetailError, setTaskDetailError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"user" | "task">("user");
 
+  const [showNewUser, setShowNewUser] = useState(false);
+  const [newUserForm, setNewUserForm] = useState({ name: "", email: "", password: "", role: "user" as "user" | "admin" });
+  const [creating, setCreating] = useState(false);
+
+  const openNewUser = () => {
+    setNewUserForm({ name: "", email: "", password: "", role: "user" });
+    setShowNewUser(true);
+  };
+
+  const closeNewUser = () => { if (!creating) setShowNewUser(false); };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (creating) return;
+    setCreating(true);
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUserForm),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? "Error al crear usuario"); return; }
+      toast.success("Usuario creado correctamente");
+      setShowNewUser(false);
+      await loadUsers();
+    } catch {
+      toast.error("Error de red");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const loadUsers = async () => {
     try {
       setLoading(true);
@@ -379,14 +414,19 @@ export default function AdminUserManagement() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
+    <div className="space-y-6">
       <header className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h2>
-          <p className="text-sm text-gray-500">
-            Monitorea la actividad y rendimiento de tu equipo.
-          </p>
+          <p className="text-sm text-gray-500">Monitorea la actividad y rendimiento de tu equipo.</p>
         </div>
+        <button
+          onClick={openNewUser}
+          className="flex shrink-0 items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-green-700 active:scale-95"
+        >
+          <UserPlus size={16} />
+          Nuevo Usuario
+        </button>
       </header>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -660,6 +700,66 @@ export default function AdminUserManagement() {
           )}
         </div>
       </div>
+
+      {showNewUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={closeNewUser}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Nuevo Usuario</h2>
+              <button onClick={closeNewUser} disabled={creating} className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Nombre completo</label>
+                <input type="text" required value={newUserForm.name}
+                  onChange={(e) => setNewUserForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="Ej: María García"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Correo electrónico</label>
+                <input type="email" required value={newUserForm.email}
+                  onChange={(e) => setNewUserForm((f) => ({ ...f, email: e.target.value }))}
+                  placeholder="usuario@empresa.com"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Contraseña</label>
+                <input type="password" required minLength={6} value={newUserForm.password}
+                  onChange={(e) => setNewUserForm((f) => ({ ...f, password: e.target.value }))}
+                  placeholder="Mínimo 6 caracteres"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Rol</label>
+                <select value={newUserForm.role}
+                  onChange={(e) => setNewUserForm((f) => ({ ...f, role: e.target.value as "user" | "admin" }))}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                >
+                  <option value="user">Usuario</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={closeNewUser} disabled={creating}
+                  className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 transition-all hover:bg-gray-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={creating}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-600 py-2.5 text-sm font-medium text-white transition-all hover:bg-green-700 disabled:opacity-60">
+                  {creating && <Loader2 size={14} className="animate-spin" />}
+                  {creating ? "Creando..." : "Crear usuario"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -226,7 +226,7 @@ export default function AdminEvaluationManager() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Gestor de Evaluaciones</h2>
 

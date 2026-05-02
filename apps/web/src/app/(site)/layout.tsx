@@ -19,7 +19,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     <>
       <PresencePing user={userSession} />
       <Navbar role={session.role} />
-      <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="w-full">
         <section>{children}</section>
       </div>
     </>
