@@ -7,6 +7,7 @@ import AdminTeamStats from "./AdminTeamStats";
 import AdminPerformanceFilters from "./AdminPerformanceFilters";
 import AdminTeamRanking from "./AdminTeamRanking";
 import AdminUserPerformancePanel from "./AdminUserPerformancePanel";
+import AdminRoiPanel from "./AdminRoiPanel";
 
 export default function AdminPerformanceDashboard() {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
@@ -47,6 +48,10 @@ export default function AdminPerformanceDashboard() {
             period={period}
           />
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-6">
+        <AdminRoiPanel />
       </div>
     </div>
   );

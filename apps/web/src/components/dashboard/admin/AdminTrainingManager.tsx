@@ -417,7 +417,8 @@ function EnrollModal({ lineId, onClose }: { lineId: string; onClose: () => void 
 
   useEffect(() => {
     fetch("/api/dashboard/admin/users").then((r) => r.json()).then((d) => {
-      setUsers((d.users || []).filter((u: AdminUser & { role: string }) => u.role === "user" || !u.role));
+      const list: (AdminUser & { role: string })[] = Array.isArray(d) ? d : (d.users ?? []);
+      setUsers(list.filter((u) => u.role === "user" || !u.role));
       setLoading(false);
     });
   }, []);
