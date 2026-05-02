@@ -1,4 +1,4 @@
-import { sql } from "./db";
+﻿import { sql } from ".";
 
 function getPeriodDays(period?: string) {
   switch (period) {
@@ -339,3 +339,4 @@ export const analyticsDb = {
     };
   },
 };
+

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { analyticsDb } from "@/lib/analytics-db";
+import { analyticsDb } from "@/lib/db/analytics-db";
 
 // --- HELPERS ---
 const errorResponse = (msg: string, status = 500, details?: any) =>

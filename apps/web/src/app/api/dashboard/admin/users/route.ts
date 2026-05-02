@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { tasksDb } from "@/lib/tasks-db";
+import { tasksDb } from "@/lib/db/tasks-db";
 
 const urlService = process.env.NEXT_PUBLIC_SERVICES_URL;
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const isProd = process.env.NODE_ENV === 'production';
 
-// Si es producción usa la URL de Vercel, si no, usa localhost
+// Si es producciÃ³n usa la URL de Vercel, si no, usa localhost
 
 const jsonResponse = (data: any, status = 200) => {
   return NextResponse.json(data, {
@@ -19,18 +19,18 @@ const jsonResponse = (data: any, status = 200) => {
 };
 
 export const formatUser = (u: any, onlineUsers: any[] = []) => {
-  // Buscamos si existe algún objeto cuyo userId coincida con u.id
+  // Buscamos si existe algÃºn objeto cuyo userId coincida con u.id
   const isOnline = onlineUsers.some(user => user.userId === u.id);
 
 console.log("Carga onlineUsers (total):", onlineUsers);
-  console.log(`¿Usuario ${u.name} online?:`, isOnline); 
+  console.log(`Â¿Usuario ${u.name} online?:`, isOnline); 
 
   return {
     id: u.id,
     name: u.name ?? "Sin nombre",
     email: u.email,
     role: (u.role ?? "user") as "user" | "admin",
-    // Si está en la lista, forzamos "active"
+    // Si estÃ¡ en la lista, forzamos "active"
     status: isOnline ? "active" : (u.status ?? "inactive"),
     verified: !!u.verified,
     createdAt: u.created_at || new Date().toISOString(),

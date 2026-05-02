@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { tasksDb } from "@/lib/tasks-db";
+import { tasksDb } from "@/lib/db/tasks-db";
 
 export async function GET(request: NextRequest) {
   try {

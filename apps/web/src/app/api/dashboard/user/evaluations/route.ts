@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { evaluationsDb } from "@/lib/evaluations-db";
+import { evaluationsDb } from "@/lib/db/evaluations-db";
 
 const urlServer = process.env.NEXT_PUBLIC_SERVICES_URL; 
 
@@ -18,9 +18,9 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ evaluations });
   } catch (error: any) {
     // 1. Log detallado en la terminal (importante para Neon/Postgres)
-    console.error("❌ ERROR EN GET USER EVALUATIONS:");
+    console.error("âŒ ERROR EN GET USER EVALUATIONS:");
     console.error("Mensaje:", error.message);
-    console.error("Código DB:", error.code); // Código de error de Postgres (ej: 42P01)
+    console.error("CÃ³digo DB:", error.code); // CÃ³digo de error de Postgres (ej: 42P01)
     console.error("Stack:", error.stack);
 
     // 2. Respuesta con detalles para el Frontend (solo en desarrollo)
@@ -29,8 +29,8 @@ export async function GET(_request: NextRequest) {
         error: "Error interno al obtener evaluaciones", 
         message: error.message,
         code: error.code,
-        // Esto te dirá si el problema es la query o la conexión
-        hint: error.hint || "Verifica que la función getUserEvaluations exista en dashboard-db"
+        // Esto te dirÃ¡ si el problema es la query o la conexiÃ³n
+        hint: error.hint || "Verifica que la funciÃ³n getUserEvaluations exista en dashboard-db"
       }, 
       { status: 500 }
     );

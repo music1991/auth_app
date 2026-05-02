@@ -1,4 +1,4 @@
-import { sql } from "./db";
+﻿import { sql } from ".";
 
 // ==========================================
 // SECTION: EVALUATION TEMPLATES
@@ -225,3 +225,4 @@ export const evaluationsDb = {
     `;
   },
 };
+

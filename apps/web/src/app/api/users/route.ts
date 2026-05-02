@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { tasksDb } from "@/lib/tasks-db";
+import { tasksDb } from "@/lib/db/tasks-db";
 import { formatUser } from "../dashboard/admin/users/route";
 
 export const runtime = "nodejs";
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     try {
       const socketUrl = `${urlService}/online-ids?t=${Date.now()}`;
 
-   //   console.log("🚀 Intentando llamar a:", socketUrl);
+   //   console.log("ðŸš€ Intentando llamar a:", socketUrl);
 
       const socketRes = await fetch(socketUrl, {
         method: 'GET',
@@ -42,12 +42,12 @@ export async function GET(req: Request) {
 
       if (socketRes.ok) {
         onlineIds = await socketRes.json();
-     //   console.log("✅ Respuesta del Socket Server:", onlineIds);
+     //   console.log("âœ… Respuesta del Socket Server:", onlineIds);
       } else {
-     //   console.error("⚠️ El Socket Server respondió con status:", socketRes.status);
+     //   console.error("âš ï¸ El Socket Server respondiÃ³ con status:", socketRes.status);
       }
     } catch (e: any) {
-   //   console.error("❌ Error de red conectando al Socket Server:", e.message);
+   //   console.error("âŒ Error de red conectando al Socket Server:", e.message);
     }
 
     if (id) {

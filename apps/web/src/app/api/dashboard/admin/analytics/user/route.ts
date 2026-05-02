@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { analyticsDb } from "@/lib/analytics-db";
+import { analyticsDb } from "@/lib/db/analytics-db";
 
 // --- HELPERS ---
 const errorResponse = (msg: string, status = 500, details?: any) =>
@@ -15,7 +15,7 @@ const authCheck = async () => {
   return session;
 };
 
-// --- GET: lista simple de usuarios para filtros del módulo analytics ---
+// --- GET: lista simple de usuarios para filtros del mÃ³dulo analytics ---
 export async function GET() {
   try {
     const session = await authCheck();
@@ -25,9 +25,9 @@ export async function GET() {
 
     return NextResponse.json(users);
   } catch (error: any) {
-    console.error("❌ ERROR EN GET ANALYTICS USERS:");
+    console.error("âŒ ERROR EN GET ANALYTICS USERS:");
     console.error("Mensaje:", error.message);
-    console.error("Código DB:", error.code);
+    console.error("CÃ³digo DB:", error.code);
     console.error("Stack:", error.stack);
 
     return NextResponse.json(

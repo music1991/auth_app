@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { tasksDb } from "@/lib/tasks-db";
+import { tasksDb } from "@/lib/db/tasks-db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const stats = await tasksDb.getAdminStats();
     return NextResponse.json(stats);
   } catch (error: any) {
-   console.error("🚨 ADMIN STATS BACKEND ERROR:", error);
+   console.error("ðŸš¨ ADMIN STATS BACKEND ERROR:", error);
 
   return NextResponse.json(
     {
@@ -24,3 +24,4 @@ export async function GET(request: NextRequest) {
   );
   }
 }
+

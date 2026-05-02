@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { tasksDb } from "@/lib/tasks-db";
+import { tasksDb } from "@/lib/db/tasks-db";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     return new Response(body, {
       status: 200,
       headers: {
-        // Usamos el MIME guardado que ya vimos que en Neon está bien (image/jpeg)
+        // Usamos el MIME guardado que ya vimos que en Neon estÃ¡ bien (image/jpeg)
         "Content-Type": row.avatar_mime || "image/jpeg",
         "Content-Length": String(body.length),
         "Cache-Control": "no-store, must-revalidate",
@@ -70,3 +70,4 @@ export async function DELETE() {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
+

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { analyticsDb } from "@/lib/analytics-db";
+import { analyticsDb } from "@/lib/db/analytics-db";
 
 // --- HELPERS ---
 const errorResponse = (msg: string, status = 500, details?: any) =>
@@ -20,7 +20,7 @@ const parsePeriod = (period: string | null) => {
   return allowed.has(period || "") ? period! : "30d";
 };
 
-// --- GET: estadísticas globales del equipo ---
+// --- GET: estadÃ­sticas globales del equipo ---
 export async function GET(request: NextRequest) {
   try {
     const session = await authCheck();
@@ -33,14 +33,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(stats);
   } catch (error: any) {
-    console.error("❌ ERROR EN GET TEAM ANALYTICS:");
+    console.error("âŒ ERROR EN GET TEAM ANALYTICS:");
     console.error("Mensaje:", error.message);
-    console.error("Código DB:", error.code);
+    console.error("CÃ³digo DB:", error.code);
     console.error("Stack:", error.stack);
 
     return NextResponse.json(
       {
-        error: "Error interno al obtener estadísticas del equipo",
+        error: "Error interno al obtener estadÃ­sticas del equipo",
         message: error.message,
         code: error.code,
         hint:

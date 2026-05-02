@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { trainingDb } from "@/lib/training-db";
+import { trainingDb } from "@/lib/db/training-db";
 
 export async function GET() {
   const session = await getSession();
@@ -40,3 +40,4 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ id }, { status: 201 });
 }
+

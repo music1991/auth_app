@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { evaluationsDb } from "@/lib/evaluations-db";
+import { evaluationsDb } from "@/lib/db/evaluations-db";
 
 const errorResponse = (msg: string, status = 500) => 
   NextResponse.json({ error: msg }, { status });
@@ -29,11 +29,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true }, { status: 201 });
 
   } catch (error: any) {
-    console.error("❌ ERROR AL ASIGNAR EVALUACIÓN:", error.message);
+    console.error("âŒ ERROR AL ASIGNAR EVALUACIÃ“N:", error.message);
     
     return NextResponse.json(
       { 
-        error: "Error interno al asignar la evaluación", 
+        error: "Error interno al asignar la evaluaciÃ³n", 
         technical_details: error.message 
       }, 
       { status: 500 }
@@ -68,13 +68,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(formatted);
 
   } catch (error: any) {
-    console.error("❌ ERROR GET assigned users:", error.message);
+    console.error("âŒ ERROR GET assigned users:", error.message);
     return errorResponse(error.message);
   }
 }
 
 // =========================
-// PUT: Desasignar usuario de una evaluación
+// PUT: Desasignar usuario de una evaluaciÃ³n
 // =========================
 export async function PUT(request: NextRequest) {
   try {
@@ -91,7 +91,7 @@ export async function PUT(request: NextRequest) {
 
     if (!deleted) {
       return errorResponse(
-        "No se pudo desasignar (quizás ya completó la evaluación)", 
+        "No se pudo desasignar (quizÃ¡s ya completÃ³ la evaluaciÃ³n)", 
         400
       );
     }
@@ -99,7 +99,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error("❌ ERROR PUT unassign user:", error.message);
+    console.error("âŒ ERROR PUT unassign user:", error.message);
     return errorResponse(error.message);
   }
 }

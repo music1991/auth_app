@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { analyticsDb } from "@/lib/analytics-db";
+import { analyticsDb } from "@/lib/db/analytics-db";
 
 // --- HELPERS ---
 const errorResponse = (msg: string, status = 500, details?: any) =>
@@ -20,7 +20,7 @@ const parsePeriod = (period: string | null) => {
   return allowed.has(period || "") ? period! : "30d";
 };
 
-// --- GET: resumen de desempeño del usuario autenticado ---
+// --- GET: resumen de desempeÃ±o del usuario autenticado ---
 export async function GET(request: NextRequest) {
   try {
     const session = await authCheck();
@@ -36,14 +36,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(data);
   } catch (error: any) {
-    console.error("❌ ERROR EN GET USER ANALYTICS SUMMARY:");
+    console.error("âŒ ERROR EN GET USER ANALYTICS SUMMARY:");
     console.error("Mensaje:", error.message);
-    console.error("Código DB:", error.code);
+    console.error("CÃ³digo DB:", error.code);
     console.error("Stack:", error.stack);
 
     return NextResponse.json(
       {
-        error: "Error interno al obtener el resumen de desempeño",
+        error: "Error interno al obtener el resumen de desempeÃ±o",
         message: error.message,
         code: error.code,
         hint:

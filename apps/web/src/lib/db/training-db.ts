@@ -1,4 +1,4 @@
-import { sql } from "./db";
+﻿import { sql } from ".";
 
 export const trainingDb = {
 
@@ -677,3 +677,4 @@ export const trainingDb = {
     `;
   },
 };
+

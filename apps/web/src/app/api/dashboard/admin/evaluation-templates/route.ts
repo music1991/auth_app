@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { evaluationsDb } from "@/lib/evaluations-db";
+import { evaluationsDb } from "@/lib/db/evaluations-db";
 
 // --- HELPERS DE RESPUESTA ---
 const errorResponse = (msg: string, status = 500, details?: any) => 
@@ -14,7 +14,7 @@ const authCheck = async () => {
 
 // --- HANDLERS ---
 
-// GET: Obtener plantillas y estadísticas
+// GET: Obtener plantillas y estadÃ­sticas
 export async function GET() {
   try {
     const session = await authCheck();
@@ -24,9 +24,9 @@ export async function GET() {
     return NextResponse.json({ evaluations });
  } catch (error: any) {
     // 1. Log detallado en la terminal (importante para Neon/Postgres)
-    console.error("❌ ERROR EN GET USER EVALUATIONS:");
+    console.error("âŒ ERROR EN GET USER EVALUATIONS:");
     console.error("Mensaje:", error.message);
-    console.error("Código DB:", error.code); // Código de error de Postgres (ej: 42P01)
+    console.error("CÃ³digo DB:", error.code); // CÃ³digo de error de Postgres (ej: 42P01)
     console.error("Stack:", error.stack);
 
     // 2. Respuesta con detalles para el Frontend (solo en desarrollo)
@@ -35,14 +35,14 @@ export async function GET() {
         error: "Error interno al obtener evaluaciones", 
         message: error.message,
         code: error.code,
-        // Esto te dirá si el problema es la query o la conexión
-        hint: error.hint || "Verifica que la función getUserEvaluations exista en dashboard-db"
+        // Esto te dirÃ¡ si el problema es la query o la conexiÃ³n
+        hint: error.hint || "Verifica que la funciÃ³n getUserEvaluations exista en dashboard-db"
       }, 
       { status: 500 }
     );
   }
 }
-// POST: Crear la evaluación
+// POST: Crear la evaluaciÃ³n
 export async function POST(request: NextRequest) {
   try {
     const session = await authCheck();
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json();
 
-    // Aquí solo creamos el recurso
+    // AquÃ­ solo creamos el recurso
     const templateId = await evaluationsDb.createEvaluationTemplate({
       title: data.title,
       description: data.description,
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, templateId }, { status: 201 });
 
   } catch (error: any) {
-    console.error("❌ ERROR AL CREAR EVALUACIÓN:", error.message);
+    console.error("âŒ ERROR AL CREAR EVALUACIÃ“N:", error.message);
     return errorResponse("Error al crear el template", 500, error.message);
   }
 }
@@ -104,7 +104,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error("❌ ERROR AL PUBLICAR EVALUACIÓN:", error.message);
+    console.error("âŒ ERROR AL PUBLICAR EVALUACIÃ“N:", error.message);
     return errorResponse("Error al publicar el template", 500, error.message);
   }
 }
