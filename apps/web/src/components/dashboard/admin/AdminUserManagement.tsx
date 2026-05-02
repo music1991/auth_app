@@ -17,7 +17,6 @@ import {
   AlertCircle,
   Target,
   Trash2,
-  UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { normalizeUrl, getResourceTypeLabel } from "@/lib/utils";
@@ -388,10 +387,6 @@ export default function AdminUserManagement() {
             Monitorea la actividad y rendimiento de tu equipo.
           </p>
         </div>
-        <button className="flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-white shadow-sm transition-all hover:bg-green-700">
-          <UserPlus size={18} />
-          <span>Nuevo Usuario</span>
-        </button>
       </header>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

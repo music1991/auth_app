@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { tasksDb } from "@/lib/db/tasks-db";
 import { formatUser } from "../dashboard/admin/users/route";
+import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,6 +67,43 @@ export async function GET(req: Request) {
     return jsonResponse({
       error: "Internal Server Error",
       detail: process.env.NODE_ENV !== "production" ? err.message : undefined
+    }, 500);
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await getSession();
+    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
+    if (session.role !== "admin") return jsonResponse({ error: "Forbidden" }, 403);
+
+    const body = await req.json();
+    const { name, email, password, role } = body as {
+      name?: string;
+      email?: string;
+      password?: string;
+      role?: string;
+    };
+
+    if (!name?.trim()) return jsonResponse({ error: "El nombre es requerido" }, 400);
+    if (!email?.trim()) return jsonResponse({ error: "El correo es requerido" }, 400);
+    if (!password || password.length < 6) return jsonResponse({ error: "La contraseña debe tener al menos 6 caracteres" }, 400);
+    if (role !== "user" && role !== "admin") return jsonResponse({ error: "Rol inválido" }, 400);
+
+    const existing = await db.getUserByEmail(email);
+    if (existing) return jsonResponse({ error: "Ya existe un usuario con ese correo" }, 409);
+
+    const id = randomUUID();
+    const password_hash = await bcrypt.hash(password, 10);
+
+    await db.insertUser({ id, name: name.trim(), email: email.trim(), password_hash, role });
+    await db.markVerifiedById(id);
+
+    return jsonResponse({ success: true, id }, 201);
+  } catch (err: any) {
+    return jsonResponse({
+      error: "Internal Server Error",
+      detail: process.env.NODE_ENV !== "production" ? err.message : undefined,
     }, 500);
   }
 }

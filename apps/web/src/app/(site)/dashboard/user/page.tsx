@@ -21,7 +21,7 @@ export default function UserDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <div className="px-4 py-6 sm:px-6">
         <div className="mb-6">
           <h1 className="bg-gradient-to-r from-gray-900 to-green-600 bg-clip-text text-3xl font-bold text-transparent">
             Mi Panel
@@ -49,7 +49,7 @@ export default function UserDashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg backdrop-blur-sm">
+        <div className="rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg">
           {activeTab === "tasks"       && <UserTasksPanel />}
           {activeTab === "evaluations" && <UserEvaluationsPanel />}
           {activeTab === "training"    && <UserTrainingPanel />}
