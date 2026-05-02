@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { evaluationsDb } from "@/lib/evaluations-db";
 
 // --- HELPERS DE RESPUESTA ---
 const errorResponse = (msg: string, status = 500, details?: any) => 
@@ -20,7 +20,7 @@ export async function GET() {
     const session = await authCheck();
     if (!session) return errorResponse("Unauthorized", 401);
 
-    const evaluations = await dashboardDb.getEvaluationTemplatesWithStats();
+    const evaluations = await evaluationsDb.getEvaluationTemplatesWithStats();
     return NextResponse.json({ evaluations });
  } catch (error: any) {
     // 1. Log detallado en la terminal (importante para Neon/Postgres)
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
 
     // Aquí solo creamos el recurso
-    const templateId = await dashboardDb.createEvaluationTemplate({
+    const templateId = await evaluationsDb.createEvaluationTemplate({
       title: data.title,
       description: data.description,
       type: data.type,
@@ -79,7 +79,7 @@ export async function PATCH(request: NextRequest) {
   const { id, action } = await request.json();
   
   if (action === 'publish') {
-     await dashboardDb.publishEvaluationTemplate(id);
+     await evaluationsDb.publishEvaluationTemplate(id);
      return NextResponse.json({ success: true });
   }
   
@@ -99,7 +99,7 @@ export async function PUT(request: NextRequest) {
       return errorResponse("Template ID is required", 400);
     }
 
-    await dashboardDb.publishEvaluationTemplate(templateId);
+    await evaluationsDb.publishEvaluationTemplate(templateId);
 
     return NextResponse.json({ success: true });
 

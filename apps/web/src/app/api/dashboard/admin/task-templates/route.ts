@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { tasksDb } from "@/lib/tasks-db";
 
 export async function GET() {
   try {
@@ -10,7 +10,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const taskTemplates = await dashboardDb.getTaskTemplates();
+    const taskTemplates = await tasksDb.getTaskTemplates();
 
     return NextResponse.json({ taskTemplates });
   } catch (error) {
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     // CREATE TEMPLATE
     if (action === "create-template") {
-      const templateId = await dashboardDb.createTaskTemplate({
+      const templateId = await tasksDb.createTaskTemplate({
         title: data.title,
         description: data.description,
         type: data.type,
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // UPDATE TEMPLATE
     if (action === "update-template") {
-      await dashboardDb.updateTaskTemplate(data.id, {
+      await tasksDb.updateTaskTemplate(data.id, {
         title: data.title,
         description: data.description,
         type: data.type,
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // DELETE TEMPLATE
     if (action === "delete-template") {
-      await dashboardDb.deleteTaskTemplate(data.id);
+      await tasksDb.deleteTaskTemplate(data.id);
 
       return NextResponse.json({
         success: true,

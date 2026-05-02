@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { tasksDb } from "@/lib/tasks-db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,7 +34,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return jsonResponse({ error: "User id is required" }, 400);
     }
 
-    const tasks = await dashboardDb.getUserTasks(id);
+    const tasks = await tasksDb.getUserTasks(id);
 
     return jsonResponse({ tasks: tasks ?? [] });
   } catch (err: any) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { analyticsDb } from "@/lib/analytics-db";
 
 // --- HELPERS ---
 const errorResponse = (msg: string, status = 500, details?: any) =>
@@ -35,7 +35,7 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const period = parsePeriod(searchParams.get("period"));
 
-    const data = await dashboardDb.getAdminUserPerformance(userId, period);
+    const data = await analyticsDb.getAdminUserPerformance(userId, period);
 
     return NextResponse.json(data);
   } catch (error: any) {
@@ -51,7 +51,7 @@ export async function GET(
         code: error.code,
         hint:
           error.hint ||
-          "Verifica que exista dashboardDb.getAdminUserPerformance(userId, period)",
+          "Verifica que exista analyticsDb.getAdminUserPerformance(userId, period)",
       },
       { status: 500 }
     );

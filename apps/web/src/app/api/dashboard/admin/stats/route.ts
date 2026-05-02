@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { tasksDb } from "@/lib/tasks-db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const stats = await dashboardDb.getAdminStats();
+    const stats = await tasksDb.getAdminStats();
     return NextResponse.json(stats);
   } catch (error: any) {
    console.error("🚨 ADMIN STATS BACKEND ERROR:", error);

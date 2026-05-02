@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { tasksDb } from "@/lib/tasks-db";
 
 export async function GET() {
   try {
@@ -11,7 +11,7 @@ export async function GET() {
     }
 
     const userId = session.userId;
-    const tasks = await dashboardDb.getUserTasks(userId);
+    const tasks = await tasksDb.getUserTasks(userId);
 
     return NextResponse.json({ tasks });
   } catch (error) {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     const userId = session.userId;
 
-    const task = await dashboardDb.getTaskById(taskId);
+    const task = await tasksDb.getTaskById(taskId);
 
     if (!task) {
       return NextResponse.json(
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         ? Math.max(0, Math.min(100, progress))
         : undefined;
 
-    await dashboardDb.updateUserTask(taskId, {
+    await tasksDb.updateUserTask(taskId, {
       status,
       progress: safeProgress,
       userNotes: details.userNotes,

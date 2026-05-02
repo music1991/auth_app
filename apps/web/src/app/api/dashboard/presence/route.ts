@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,8 +17,6 @@ export async function POST() {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: NO_CACHE_HEADERS });
     }
-
-   // await dashboardDb.upsertUserPresence(session.userId);
 
     return NextResponse.json({ ok: true }, { headers: NO_CACHE_HEADERS });
   } catch (err: any) {

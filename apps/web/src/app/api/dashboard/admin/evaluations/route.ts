@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { evaluationsDb } from "@/lib/evaluations-db";
 
 const errorResponse = (msg: string, status = 500) => 
   NextResponse.json({ error: msg }, { status });
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       return errorResponse("Faltan datos requeridos (templateId o userIds)", 400);
     }
 
-    await dashboardDb.assignEvaluationTemplateToUsers({
+    await evaluationsDb.assignEvaluationTemplateToUsers({
       templateId,
       userIds,
       assignedBy: session.userId,
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     if (!templateId) return errorResponse("templateId es requerido", 400);
 
-    const users = await dashboardDb.getAssignedUsersByTemplate(templateId);
+    const users = await evaluationsDb.getAssignedUsersByTemplate(templateId);
 
     // Formateo uniforme
     const formatted = users.map(u => ({
@@ -87,7 +87,7 @@ export async function PUT(request: NextRequest) {
       return errorResponse("templateId y userId son requeridos", 400);
     }
 
-    const deleted = await dashboardDb.unassignUserFromEvaluation(templateId, userId);
+    const deleted = await evaluationsDb.unassignUserFromEvaluation(templateId, userId);
 
     if (!deleted) {
       return errorResponse(

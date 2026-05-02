@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { tasksDb } from "@/lib/tasks-db";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export async function GET(req: Request) {
 
     if (!targetId) return new Response("Unauthorized", { status: 401 });
 
-    const row = await dashboardDb.getUserAvatar(targetId);
+    const row = await tasksDb.getUserAvatar(targetId);
 
     // Si la fila no existe o el blob es nulo en la DB
     if (!row || !row.avatar_blob) {
@@ -52,7 +52,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "File too large" }, { status: 413 });
     }
 
-    await dashboardDb.updateUserAvatar(session.userId, buffer, contentType);
+    await tasksDb.updateUserAvatar(session.userId, buffer, contentType);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
@@ -64,7 +64,7 @@ export async function DELETE() {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    await dashboardDb.deleteUserAvatar(session.userId);
+    await tasksDb.deleteUserAvatar(session.userId);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

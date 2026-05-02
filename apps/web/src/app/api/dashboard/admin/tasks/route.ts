@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { tasksDb } from "@/lib/tasks-db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Cada usuario obtiene sus tareas asignadas
-    const tasks = await dashboardDb.getAssignedTasksForAdmin(); //getUserTasks ??
+    const tasks = await tasksDb.getAssignedTasksForAdmin(); //getUserTasks ??
 
     return NextResponse.json({ tasks });
 
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
 
-      const taskId = await dashboardDb.assignTask({
+      const taskId = await tasksDb.assignTask({
         templateId: data.templateId,
         userId: data.userId,
         assignedBy: session.userId,
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     // ======================================
     if (action === "update-task-status") {
 
-      await dashboardDb.updateTaskStatus(
+      await tasksDb.updateTaskStatus(
         data.taskId,
         data.status
       );

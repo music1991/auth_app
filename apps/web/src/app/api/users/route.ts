@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { tasksDb } from "@/lib/tasks-db";
 import { formatUser } from "../dashboard/admin/users/route";
 
 export const runtime = "nodejs";
@@ -57,7 +57,7 @@ export async function GET(req: Request) {
     }
 
  
-    const users = await dashboardDb.getAllUsers();
+    const users = await tasksDb.getAllUsers();
     if (!users) return jsonResponse([], 200);
     return jsonResponse(users.map(u => formatUser(u, onlineIds)));
 

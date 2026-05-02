@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { tasksDb } from "@/lib/tasks-db";
 
 const urlService = process.env.NEXT_PUBLIC_SERVICES_URL;
 
@@ -76,7 +76,7 @@ export async function GET() {
       console.error("Socket presence error:", e.message);
     }
 
-    const users = await dashboardDb.getUsersWithMetrics();
+    const users = await tasksDb.getUsersWithMetrics();
 
     if (!users) {
       return jsonResponse([], 200);

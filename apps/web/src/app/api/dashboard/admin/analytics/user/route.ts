@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { analyticsDb } from "@/lib/analytics-db";
 
 // --- HELPERS ---
 const errorResponse = (msg: string, status = 500, details?: any) =>
@@ -21,7 +21,7 @@ export async function GET() {
     const session = await authCheck();
     if (!session) return errorResponse("Unauthorized", 401);
 
-    const users = await dashboardDb.getAnalyticsUsers();
+    const users = await analyticsDb.getAnalyticsUsers();
 
     return NextResponse.json(users);
   } catch (error: any) {
@@ -37,7 +37,7 @@ export async function GET() {
         code: error.code,
         hint:
           error.hint ||
-          "Verifica que exista dashboardDb.getAnalyticsUsers()",
+          "Verifica que exista analyticsDb.getAnalyticsUsers()",
       },
       { status: 500 }
     );

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { tasksDb } from "@/lib/tasks-db";
 
 export async function GET(
   _req: NextRequest,
@@ -29,7 +29,7 @@ export async function GET(
       );
     }
 
-    const task = await dashboardDb.getAdminUserTaskById(id, taskId);
+    const task = await tasksDb.getAdminUserTaskById(id, taskId);
 
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });

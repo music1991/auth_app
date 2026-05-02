@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { dashboardDb } from "@/lib/dashboard-db";
+import { evaluationsDb } from "@/lib/evaluations-db";
 
 const urlServer = process.env.NEXT_PUBLIC_SERVICES_URL; 
 
@@ -13,7 +13,7 @@ export async function GET(_request: NextRequest) {
     }
 
     const userId = session.userId;
-    const evaluations = await dashboardDb.getUserEvaluations(userId);
+    const evaluations = await evaluationsDb.getUserEvaluations(userId);
 
     return NextResponse.json({ evaluations });
   } catch (error: any) {
@@ -50,7 +50,7 @@ export async function GET(_request: NextRequest) {
     const { action, data } = body;
 
     if (action === "submit") {
-      await dashboardDb.submitEvaluation({
+      await evaluationsDb.submitEvaluation({
         evaluationId: data.evaluationId,
         userId,
         responses: data.responses,
