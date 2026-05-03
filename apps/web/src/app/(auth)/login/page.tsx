@@ -141,7 +141,7 @@ export default function LoginPage() {
       </div>
       
 {/* Estas Partes Son Temporales */}
-      <div className="mt-12 flex gap-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex-col">
+{/*       <div className="mt-12 flex gap-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex-col">
         <div className="flex flex-col mt-3 mb-3 items-center justify-center">
           <div className="mb-4 text-center">
             <span role="img" aria-label="key">🔑</span>
@@ -167,9 +167,9 @@ export default function LoginPage() {
         >
           Use Admin Account
         </button>
-      </div>
+      </div> */}
 
-      <div className="mt-12 flex gap-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex-col">
+{/*       <div className="mt-12 flex gap-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex-col">
         <div className="flex flex-col mt-3 mb-3 items-center justify-center">
           <div className="mb-4 text-center">
             <span role="img" aria-label="key">🔑</span>
@@ -195,7 +195,7 @@ export default function LoginPage() {
         >
           Use User Account
         </button>
-      </div>
+      </div> */}
     </form>
   );
 }
