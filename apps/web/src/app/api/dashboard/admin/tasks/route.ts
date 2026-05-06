@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
         title: data.title,
         description: data.description,
         dueDate: data.dueDate,
+        trainingLineId: data.trainingLineId ?? null,
         details: data.details
       });
 

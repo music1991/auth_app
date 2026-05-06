@@ -402,17 +402,19 @@ export const tasksDb = {
     title: string;
     description: string;
     dueDate: string;
+    trainingLineId?: string | null;
     details?: Record<string, unknown>;
   }) {
     const rows = await sql<{ id: string }>`
       INSERT INTO tasks (
         template_id, user_id, assigned_by, title, description,
-        status, progress, assigned_date, due_date, details
+        status, progress, assigned_date, due_date, training_line_id, details
       )
       VALUES (
         ${task.templateId}, ${task.userId}, ${task.assignedBy},
         ${task.title}, ${task.description},
         'pending', 0, CURRENT_TIMESTAMP, ${task.dueDate},
+        ${task.trainingLineId ?? null},
         ${JSON.stringify(task.details ?? {})}
       )
       RETURNING id

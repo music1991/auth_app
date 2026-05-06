@@ -333,6 +333,15 @@ export const trainingDb = {
     userIds: string[];
     assignedBy: string;
   }) {
+    const [costRow] = await sql<{ total_cost: number }>`
+      SELECT COALESCE(SUM(c.cost_per_user), 0)::int AS total_cost
+      FROM training_line_items tli
+      JOIN courses c ON c.id = tli.course_id
+      WHERE tli.training_line_id = ${data.trainingLineId}
+        AND tli.item_type = 'course'
+    `;
+    const trainingCost = Number(costRow?.total_cost ?? 0);
+
     const items = await sql<{ id: string }>`
       SELECT id FROM training_line_items WHERE training_line_id = ${data.trainingLineId}
     `;
@@ -351,6 +360,8 @@ export const trainingDb = {
         VALUES (${userId}, ${data.trainingLineId}, ${totalItems}, 0)
         ON CONFLICT DO NOTHING
       `;
+
+      await trainingDb.captureRoiSnapshot(userId, data.trainingLineId, trainingCost);
     }
   },
 
