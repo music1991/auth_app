@@ -57,8 +57,8 @@ export default function UserStats() {
       trend: "+5",
       description: "This month",
       icon: CheckCircle,
-      color: "from-emerald-500 to-green-500",
-      bgColor: "bg-gradient-to-br from-emerald-50 to-green-50",
+      color: "from-green-500 to-green-600",
+      bgColor: "bg-green-50",
       borderColor: "border-emerald-200",
       iconColor: "text-emerald-600"
     },

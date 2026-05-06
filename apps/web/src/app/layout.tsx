@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 export const metadata: Metadata = {
   title: "T Improve",
@@ -18,14 +19,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var h=document.documentElement;var t=localStorage.getItem('teams-theme');var v=['esmeralda','verde','cian','azul','indigo','violeta','morado','rosa','rojo','naranja'];if(t&&v.indexOf(t)!==-1)h.setAttribute('data-theme',t);if(localStorage.getItem('teams-dark')==='1')h.classList.add('dark');}catch(e){}})();`,
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
-        <main className="min-h-screen bg-white">
+        <ThemeProvider>
+        <main className="min-h-screen bg-background">
           {children}
-          <Toaster 
-            position="top-right" 
-            richColors 
-            closeButton 
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
             duration={4000}
             toastOptions={{
               style: {
@@ -34,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }}
           />
         </main>
+        </ThemeProvider>
         
         <script
           dangerouslySetInnerHTML={{

@@ -274,9 +274,10 @@ export const tasksDb = {
       user_id: string;
       status: string;
       progress: number;
+      training_line_id: string | null;
       details: Record<string, unknown> | null;
     }>`
-      SELECT id, user_id, status, progress, details
+      SELECT id, user_id, status, progress, training_line_id, details
       FROM tasks
       WHERE id = ${taskId}
       LIMIT 1

@@ -205,6 +205,21 @@ export const evaluationsDb = {
     }));
   },
 
+  async getEvaluationById(evaluationId: string) {
+    const rows = await sql<{
+      id: string;
+      user_id: string;
+      training_line_id: string | null;
+      status: string;
+    }>`
+      SELECT id, user_id, training_line_id, status
+      FROM evaluations
+      WHERE id = ${evaluationId}
+      LIMIT 1
+    `;
+    return rows[0] ?? null;
+  },
+
   async submitEvaluation(data: {
     evaluationId: string;
     userId: string;

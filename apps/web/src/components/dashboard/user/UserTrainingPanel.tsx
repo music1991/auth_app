@@ -70,7 +70,7 @@ function ProgressBar({ value, max }: { value: number; max: number }) {
     <div className="flex items-center gap-3">
       <div className="flex-1 h-2 overflow-hidden rounded-full bg-gray-100">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all"
+          className="h-full rounded-full bg-green-500 transition-all"
           style={{ width: `${pct}%` }}
         />
       </div>

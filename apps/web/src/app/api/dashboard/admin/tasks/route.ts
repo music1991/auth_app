@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { tasksDb } from "@/lib/db/tasks-db";
+import { trainingDb } from "@/lib/db/training-db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -66,15 +67,15 @@ export async function POST(request: NextRequest) {
     // UPDATE TASK STATUS
     // ======================================
     if (action === "update-task-status") {
+      const task = await tasksDb.getTaskById(data.taskId);
 
-      await tasksDb.updateTaskStatus(
-        data.taskId,
-        data.status
-      );
+      await tasksDb.updateTaskStatus(data.taskId, data.status);
 
-      return NextResponse.json({
-        success: true
-      });
+      if (data.status === "completed" && task?.training_line_id) {
+        await trainingDb.recalculateProgress(task.user_id, task.training_line_id);
+      }
+
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json(

@@ -47,6 +47,7 @@ export interface DashboardTask {
   assigned_date?: string | null;
   due_date?: string | null;
   completed_date?: string | null;
+  training_line_id?: string | null;
   details?: unknown;
   requirements?: unknown;
   assigned_by_name?: string | null;

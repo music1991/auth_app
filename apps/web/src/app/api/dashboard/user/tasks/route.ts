@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { tasksDb } from "@/lib/db/tasks-db";
+import { trainingDb } from "@/lib/db/training-db";
 
 export async function GET() {
   try {
@@ -78,6 +79,10 @@ export async function POST(request: NextRequest) {
       progress: safeProgress,
       userNotes: details.userNotes,
     });
+
+    if (status === "completed" && task.training_line_id) {
+      await trainingDb.recalculateProgress(userId, task.training_line_id);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

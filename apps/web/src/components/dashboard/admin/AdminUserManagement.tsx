@@ -485,7 +485,7 @@ export default function AdminUserManagement() {
                 <>
                   <div className="mb-8 flex flex-col items-start justify-between gap-6 border-b border-gray-100 pb-6 md:flex-row">
                     <div className="flex items-center gap-4">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-green-700 text-2xl font-bold text-white">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-600 text-2xl font-bold text-white">
                         {selectedUser.name?.[0]}
                       </div>
                       <div>

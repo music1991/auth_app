@@ -22,9 +22,6 @@ export const formatUser = (u: any, onlineUsers: any[] = []) => {
   // Buscamos si existe algÃºn objeto cuyo userId coincida con u.id
   const isOnline = onlineUsers.some(user => user.userId === u.id);
 
-console.log("Carga onlineUsers (total):", onlineUsers);
-  console.log(`Â¿Usuario ${u.name} online?:`, isOnline); 
-
   return {
     id: u.id,
     name: u.name ?? "Sin nombre",

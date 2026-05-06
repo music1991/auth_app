@@ -22,7 +22,7 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<TabId>("users");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30">
+    <div className="min-h-screen bg-gray-50">
       <div className="px-8 py-8 sm:px-10 lg:px-14">
         {/* Header */}
         <div className="mb-8 flex items-center gap-3">
@@ -30,7 +30,7 @@ export default function AdminDashboardPage() {
             <Shield className="h-5 w-5 text-green-600" />
           </div>
           <div>
-            <h1 className="bg-gradient-to-r from-gray-900 to-green-600 bg-clip-text text-3xl font-bold text-transparent">
+            <h1 className="text-3xl font-bold text-gray-900">
               Panel de Administración
             </h1>
             <p className="text-sm text-gray-600">Gestioná usuarios, tareas, evaluaciones y formación</p>
@@ -46,7 +46,7 @@ export default function AdminDashboardPage() {
                 onClick={() => setActiveTab(id)}
                 className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                   activeTab === id
-                    ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25"
+                    ? "bg-green-500 text-white shadow-md"
                     : "text-gray-600 hover:bg-white hover:text-gray-900"
                 }`}
               >

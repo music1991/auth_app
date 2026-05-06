@@ -128,7 +128,7 @@ function TemplateCard({ template, onEdit, onDelete, onAssign }: {
       </div>
       <div className="flex gap-2">
         <button onClick={onAssign}
-          className="flex-1 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-90">
+          className="flex-1 rounded-xl bg-green-500 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-90">
           Asignar
         </button>
         <button onClick={onEdit}
@@ -312,7 +312,7 @@ export default function AdminTaskAssignment() {
             <div className="border-t p-4 flex gap-3">
               <button onClick={handleAssign}
                 disabled={!drawerTemplate || !selectedUserId || !dueDate || assigning}
-                className="flex-1 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 py-2.5 text-sm font-semibold text-white shadow disabled:opacity-40 hover:opacity-90">
+                className="flex-1 rounded-xl bg-green-500 py-2.5 text-sm font-semibold text-white shadow disabled:opacity-40 hover:opacity-90">
                 {assigning ? "Asignando..." : "Confirmar asignación"}
               </button>
               <button onClick={() => setDrawerOpen(false)}
@@ -337,7 +337,7 @@ export default function AdminTaskAssignment() {
           ))}
         </div>
         <button onClick={() => openDrawer()}
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-90">
+          className="flex items-center gap-2 rounded-xl bg-green-500 px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-90">
           <Plus size={15} /> Nueva asignación
         </button>
       </div>

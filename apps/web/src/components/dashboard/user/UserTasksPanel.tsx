@@ -377,7 +377,7 @@ function TaskDrawer({
                   />
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all"
+                      className="h-full rounded-full bg-green-500 transition-all"
                       style={{ width: `${progress}%` }}
                     />
                   </div>
