@@ -177,7 +177,8 @@ export default function AdminTaskAssignment() {
     ])
       .then(([usersData, tasksData]) => {
         setUsers(Array.isArray(usersData) ? usersData.filter((u) => u.role === "user") : []);
-        setAllTasks(Array.isArray(tasksData) ? tasksData : []);
+        const tasks = tasksData?.tasks;
+        setAllTasks(Array.isArray(tasks) ? tasks : []);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
