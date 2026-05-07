@@ -78,8 +78,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const ok = await bcrypt.compare(password, user.password_hash);
-    if (!ok) {
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    if (!passwordMatch) {
       return NextResponse.json(
         { error: "Invalid email or password" }, 
         { 
