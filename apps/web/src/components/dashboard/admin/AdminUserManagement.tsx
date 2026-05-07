@@ -501,15 +501,6 @@ export default function AdminUserManagement() {
                         </div>
                       </div>
                     </div>
-
-                    <div className="flex w-full gap-2 md:w-auto">
-                      <button className="flex-1 rounded-xl bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-gray-200 md:flex-none">
-                        <Trash2 size={20} />
-                      </button>
-                      <button className="flex-1 rounded-xl bg-green-600 px-6 py-2 font-medium text-white shadow-sm transition-all hover:bg-green-700 md:flex-none">
-                        Enviar Mensaje
-                      </button>
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
