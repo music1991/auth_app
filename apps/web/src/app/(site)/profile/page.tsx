@@ -9,13 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { AvatarChangeButton } from "@/components/profile/AvatarChangeButton";
 import EditAvatar from "@/components/profile/EditAvatar";
 
@@ -49,29 +42,6 @@ const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
   user: "Usuario",
 };
-
-const COUNTRIES = [
-  "Argentina",
-  "Bolivia",
-  "Brasil",
-  "Chile",
-  "Colombia",
-  "Ecuador",
-  "México",
-  "Paraguay",
-  "Perú",
-  "Uruguay",
-  "Venezuela",
-  "España",
-  "Estados Unidos",
-  "Canadá",
-  "Reino Unido",
-  "Australia",
-  "Francia",
-  "Alemania",
-  "Italia",
-  "Japón",
-];
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("es-AR", {
@@ -352,25 +322,15 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label>País</Label>
-                    <Select
+                    <Label htmlFor="country">País</Label>
+                    <Input
+                      id="country"
                       name="country"
-                      defaultValue={profile?.country || undefined}
+                      defaultValue={profile?.country ?? ""}
+                      placeholder="Tu país"
                       disabled={!isEditing}
-                    >
-                      <SelectTrigger
-                        className={isEditing ? "border-blue-200 focus:border-blue-500" : ""}
-                      >
-                        <SelectValue placeholder="Seleccioná un país" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {COUNTRIES.map((c) => (
-                          <SelectItem key={c} value={c}>
-                            {c}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      className={isEditing ? "border-blue-200 focus:border-blue-500" : ""}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="city">Ciudad</Label>
