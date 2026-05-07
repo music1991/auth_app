@@ -98,26 +98,27 @@ export const evaluationsDb = {
   }) {
     if (!data.userIds.length) return;
 
-    for (const userId of data.userIds) {
-      const existing = await sql<{ id: string }>`
-        SELECT id FROM evaluations
-        WHERE template_id = ${data.templateId} AND user_id = ${userId}
-        LIMIT 1
-      `;
-      if (existing.length > 0) continue;
+    const existing = await sql<{ user_id: string }>`
+      SELECT user_id FROM evaluations
+      WHERE template_id = ${data.templateId}
+        AND user_id = ANY(${data.userIds}::uuid[])
+    `;
+    const existingSet = new Set(existing.map((r) => r.user_id));
+    const toAssign = data.userIds.filter((id) => !existingSet.has(id));
+    if (!toAssign.length) return;
 
-      await sql`
-        INSERT INTO evaluations (
-          template_id, user_id, assigned_by, status,
-          assigned_date, due_date, score, max_score, responses
-        )
-        VALUES (
-          ${data.templateId}, ${userId}, ${data.assignedBy},
-          'pending', CURRENT_TIMESTAMP, ${data.dueDate ?? null},
-          0, 0, ${JSON.stringify({})}
-        )
-      `;
-    }
+    await sql`
+      INSERT INTO evaluations (
+        template_id, user_id, assigned_by, status,
+        assigned_date, due_date, score, max_score, responses
+      )
+      SELECT
+        ${data.templateId}, u, ${data.assignedBy},
+        'pending', CURRENT_TIMESTAMP, ${data.dueDate ?? null},
+        0, 0, '{}'::jsonb
+      FROM unnest(${toAssign}::uuid[]) AS u
+      ON CONFLICT DO NOTHING
+    `;
   },
 
   async getAssignedUsersByTemplate(templateId: string) {

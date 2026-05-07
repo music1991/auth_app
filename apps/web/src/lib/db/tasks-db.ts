@@ -259,6 +259,10 @@ export const tasksDb = {
   },
 
   async updateTaskStatus(taskId: string, status: string): Promise<void> {
+    const validStatuses = new Set(["pending", "in-progress", "completed"]);
+    if (!validStatuses.has(status)) {
+      throw new Error(`Estado inválido: ${status}`);
+    }
     await sql`
       UPDATE tasks
       SET status = ${status},

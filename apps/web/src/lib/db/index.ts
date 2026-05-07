@@ -448,28 +448,24 @@ async getUserWithDataById(
     created_at: r.created_at,
   };
 
-const encoder = new TextEncoder();
-
-  const data: DbDataUser = 
-    {
-        id: r.data_id!,
-        user_id: r.user_id!,
-        first_name: r.first_name!,
-        last_name: r.data_last_name!,
-        phone: r.phone,
-        bio: r.bio,
-        country: r.country,
-        city: r.city,
-        street: r.street,
-        apartment: r.apartment,
-        postal_code: r.postal_code,
-        avatar_blob: r.avatar_blob ? encoder.encode(r.avatar_blob!) : null,
-        avatar_mime: null,
-        avatar_url: null,
-        created_at: r.data_created_at!,
-        updated_at: r.data_updated_at!,
-      }
-;
+  const data: DbDataUser = {
+    id: r.data_id!,
+    user_id: r.user_id!,
+    first_name: r.first_name!,
+    last_name: r.data_last_name!,
+    phone: r.phone,
+    bio: r.bio,
+    country: r.country,
+    city: r.city,
+    street: r.street,
+    apartment: r.apartment,
+    postal_code: r.postal_code,
+    avatar_blob: r.avatar_blob ? Buffer.from(r.avatar_blob, "base64") : null,
+    avatar_mime: null,
+    avatar_url: null,
+    created_at: r.data_created_at!,
+    updated_at: r.data_updated_at!,
+  };
 
   return { ...base, data };
 },

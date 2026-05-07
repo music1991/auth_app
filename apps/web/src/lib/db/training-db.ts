@@ -491,7 +491,7 @@ export const trainingDb = {
         completed_at = CASE WHEN ${data.status} = 'completed' THEN NOW() ELSE completed_at END
       WHERE user_id        = ${data.userId}
         AND course_id      = ${data.courseId}
-        AND (training_line_id = ${data.trainingLineId} OR (training_line_id IS NULL AND ${data.trainingLineId} IS NULL))
+        AND training_line_id IS NOT DISTINCT FROM ${data.trainingLineId}
     `;
   },
 

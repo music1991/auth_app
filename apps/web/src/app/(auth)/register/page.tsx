@@ -76,7 +76,6 @@ export default function RegisterPage() {
   const allPwOk = Object.values(rules).every(Boolean);
 
   async function handleSubmit(e: React.FormEvent) {
-    console.log("handleSubmit called");
     e.preventDefault();
 
     if (!form.name.trim() || !form.lastName.trim() || !form.email.trim() || !form.password.trim()) {

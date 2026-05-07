@@ -1,39 +1,33 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { tasksDb } from "@/lib/db/tasks-db";
+import { UserWithMetrics } from "@/types";
 
 const urlService = process.env.NEXT_PUBLIC_SERVICES_URL;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const isProd = process.env.NODE_ENV === 'production';
+interface OnlineEntry { userId: string }
 
-// Si es producciÃ³n usa la URL de Vercel, si no, usa localhost
-
-const jsonResponse = (data: any, status = 200) => {
-  return NextResponse.json(data, {
+const jsonResponse = (data: unknown, status = 200) =>
+  NextResponse.json(data, {
     status,
     headers: { "Cache-Control": "no-store, max-age=0" },
   });
-};
 
-export const formatUser = (u: any, onlineUsers: any[] = []) => {
-  // Buscamos si existe algÃºn objeto cuyo userId coincida con u.id
-  const isOnline = onlineUsers.some(user => user.userId === u.id);
-
+export const formatUser = (u: UserWithMetrics, onlineUsers: OnlineEntry[] = []) => {
+  const isOnline = onlineUsers.some((entry) => entry.userId === u.id);
   return {
     id: u.id,
     name: u.name ?? "Sin nombre",
     email: u.email,
     role: (u.role ?? "user") as "user" | "admin",
-    // Si estÃ¡ en la lista, forzamos "active"
     status: isOnline ? "active" : (u.status ?? "inactive"),
     verified: !!u.verified,
     createdAt: u.created_at || new Date().toISOString(),
-    lastLogin: u.last_login || u.last_login_at || null,
-    lastSeen: u.last_seen || u.last_seen_at || null,
-
+    lastLogin: u.last_login ?? null,
+    lastSeen: u.last_seen ?? null,
     tasksAssigned: Number(u.tasks_assigned ?? 0),
     tasksCompleted: Number(u.tasks_completed ?? 0),
     productivityScore: Number(u.productivity_score ?? 0),
@@ -43,52 +37,33 @@ export const formatUser = (u: any, onlineUsers: any[] = []) => {
 export async function GET() {
   try {
     const session = await getSession();
+    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
+    if (session.role !== "admin") return jsonResponse({ error: "Forbidden" }, 403);
 
-    if (!session) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
-
-    if (session.role !== "admin") {
-      return jsonResponse({ error: "Forbidden" }, 403);
-    }
-
-
-    let onlineIds: string[] = [];
+    let onlineUsers: OnlineEntry[] = [];
 
     try {
       const socketUrl = `${urlService}/online-ids?t=${Date.now()}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
 
       const socketRes = await fetch(socketUrl, {
         method: "GET",
         cache: "no-store",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
 
       if (socketRes.ok) {
-        onlineIds = await socketRes.json();
+        onlineUsers = await socketRes.json();
       }
-    } catch (e: any) {
-      console.error("Socket presence error:", e.message);
+    } catch (e) {
+      console.error("Socket presence error:", e instanceof Error ? e.message : e);
     }
 
     const users = await tasksDb.getUsersWithMetrics();
-
-    if (!users) {
-      return jsonResponse([], 200);
-    }
-
-    return jsonResponse(users.map((u) => formatUser(u, onlineIds)));
-  } catch (err: any) {
-    console.error("GET /users/metrics failed:", err.message);
-
-    return jsonResponse(
-      {
-        error: "Internal Server Error",
-        detail: process.env.NODE_ENV !== "production" ? err.message : undefined,
-      },
-      500
-    );
+    return jsonResponse(users.map((u) => formatUser(u, onlineUsers)));
+  } catch (err) {
+    console.error("GET /api/dashboard/admin/users failed:", err);
+    return jsonResponse({ error: "Internal Server Error" }, 500);
   }
 }

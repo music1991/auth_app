@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (!session) {
@@ -15,7 +15,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const user = await db.getUserById(params.id);
+    const { id } = await params;
+    const user = await db.getUserById(id);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -56,13 +57,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     res.headers.set("Cache-Control", "no-store");
     return res;
   } catch (err) {
-    console.error("POST /admin/users/[id]/verify failed:", err);
-    const res = NextResponse.json(
-      process.env.NODE_ENV !== "production"
-        ? { error: "Internal Server Error", detail: String(err) }
-        : { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error("POST /api/users/[id]/verify failed:", err);
+    const res = NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     res.headers.set("Cache-Control", "no-store");
     return res;
   }

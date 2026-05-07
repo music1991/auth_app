@@ -25,19 +25,29 @@ export async function PATCH(request: NextRequest) {
 
     const { evaluationId, status } = await request.json();
 
+    if (!evaluationId || !status) {
+      return NextResponse.json({ error: "evaluationId y status son requeridos" }, { status: 400 });
+    }
+
+    const evaluation = await evaluationsDb.getEvaluationById(evaluationId);
+    if (!evaluation || evaluation.user_id !== session.userId) {
+      return NextResponse.json({ error: "Evaluación no encontrada" }, { status: 404 });
+    }
+
     const response = await fetch(`${urlServer}/form/`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ evaluationId, status }),
     });
 
+    if (!response.ok) {
+      return NextResponse.json({ error: "Error al actualizar la evaluación" }, { status: response.status });
+    }
+
     const data = await response.json();
 
-    if (response.ok && status === "completed") {
-      const evaluation = await evaluationsDb.getEvaluationById(evaluationId);
-      if (evaluation?.training_line_id) {
-        await trainingDb.recalculateProgress(evaluation.user_id, evaluation.training_line_id);
-      }
+    if (status === "completed" && evaluation.training_line_id) {
+      await trainingDb.recalculateProgress(evaluation.user_id, evaluation.training_line_id);
     }
 
     return NextResponse.json(data, { status: response.status });

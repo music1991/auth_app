@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
 import { CODE_TIME, sendVerificationEmail } from "@/lib/email/verification";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +23,15 @@ function isAdminEmail(email: string): boolean {
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const { ok, retryAfter } = rateLimit(`register:${ip}`, 3, 60 * 60 * 1000);
+    if (!ok) {
+      return NextResponse.json(
+        { error: `Demasiados intentos. Intentá de nuevo en ${retryAfter} segundos.` },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
+
     if (!req.headers.get("content-type")?.includes("application/json")) {
       return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 400 });
     }

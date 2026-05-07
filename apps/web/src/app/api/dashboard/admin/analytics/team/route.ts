@@ -1,13 +1,9 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { analyticsDb } from "@/lib/db/analytics-db";
 
-// --- HELPERS ---
-const errorResponse = (msg: string, status = 500, details?: any) =>
-  NextResponse.json(
-    { error: msg, ...(details && { technical_details: details }) },
-    { status }
-  );
+const errorResponse = (msg: string, status = 500) =>
+  NextResponse.json({ error: msg }, { status });
 
 const authCheck = async () => {
   const session = await getSession();
@@ -20,7 +16,6 @@ const parsePeriod = (period: string | null) => {
   return allowed.has(period || "") ? period! : "30d";
 };
 
-// --- GET: estadÃ­sticas globales del equipo ---
 export async function GET(request: NextRequest) {
   try {
     const session = await authCheck();
@@ -30,24 +25,9 @@ export async function GET(request: NextRequest) {
     const period = parsePeriod(searchParams.get("period"));
 
     const stats = await analyticsDb.getAdminTeamStats(period);
-
     return NextResponse.json(stats);
-  } catch (error: any) {
-    console.error("âŒ ERROR EN GET TEAM ANALYTICS:");
-    console.error("Mensaje:", error.message);
-    console.error("CÃ³digo DB:", error.code);
-    console.error("Stack:", error.stack);
-
-    return NextResponse.json(
-      {
-        error: "Error interno al obtener estadÃ­sticas del equipo",
-        message: error.message,
-        code: error.code,
-        hint:
-          error.hint ||
-          "Verifica que exista analyticsDb.getAdminTeamStats(period)",
-      },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error("Error en GET team analytics:", error);
+    return errorResponse("Error interno al obtener estadísticas del equipo");
   }
 }

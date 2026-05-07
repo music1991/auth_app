@@ -4,6 +4,7 @@ import { AdminUser, EvaluationTemplateItem, NewEvaluationFormData } from "@/type
 import { INITIAL_EVALUATION_FORM } from "@/lib/constants";
 import { buildAssignmentUsers } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { EvaluationCard } from "../EvaluationCard";
 import { CreateEvaluationForm } from "./CreateEvaluationForm";
 import { ManageAssignmentsModal } from "./ManageAssignmentsModal";
@@ -41,10 +42,11 @@ export default function AdminEvaluationManager() {
     try {
       setLoading(true);
       const response = await fetch("/api/dashboard/admin/evaluation-templates");
+      if (!response.ok) throw new Error("Error al cargar plantillas");
       const data = await response.json();
       setEvaluations(data.evaluations || []);
     } catch {
-      // silencioso — el estado de evaluations queda vacío
+      toast.error("No se pudieron cargar las evaluaciones. Intentá de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -54,12 +56,11 @@ export default function AdminEvaluationManager() {
     try {
       setUsersLoading(true);
       const response = await fetch("/api/dashboard/admin/users");
+      if (!response.ok) throw new Error();
       const data = await response.json();
-      const onlyUsers = Array.isArray(data)
-        ? data.filter((user: AdminUser) => user.role === "user")
-        : [];
-      setUsers(onlyUsers);
+      setUsers(Array.isArray(data) ? data.filter((u: AdminUser) => u.role === "user") : []);
     } catch {
+      toast.error("No se pudieron cargar los usuarios.");
       setUsers([]);
     } finally {
       setUsersLoading(false);
@@ -70,9 +71,11 @@ export default function AdminEvaluationManager() {
     try {
       setAssignedLoading(true);
       const res = await fetch(`/api/dashboard/admin/evaluations/?templateId=${evaluationId}`);
+      if (!res.ok) throw new Error();
       const data = await res.json();
       setAssignedUsers(Array.isArray(data) ? data : []);
     } catch {
+      toast.error("No se pudieron cargar los usuarios asignados.");
       setAssignedUsers([]);
     } finally {
       setAssignedLoading(false);
@@ -118,22 +121,17 @@ export default function AdminEvaluationManager() {
   const createTemplate = async () => {
     try {
       setSubmitting(true);
-
       const response = await fetch("/api/dashboard/admin/evaluation-templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...newEvaluation,
-          dueDate: newEvaluation.dueDate || null,
-        }),
+        body: JSON.stringify({ ...newEvaluation, dueDate: newEvaluation.dueDate || null }),
       });
-
       if (!response.ok) throw new Error();
-
+      toast.success("Plantilla creada correctamente.");
       resetCreateForm();
       await loadTemplates();
-    } catch (error) {
-      alert("Error al crear plantilla");
+    } catch {
+      toast.error("No se pudo crear la plantilla. Intentá de nuevo.");
     } finally {
       setSubmitting(false);
     }
@@ -142,18 +140,16 @@ export default function AdminEvaluationManager() {
   const publishTemplate = async (templateId: string) => {
     try {
       setSubmitting(true);
-
       const response = await fetch("/api/dashboard/admin/evaluation-templates", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ templateId }),
       });
-
       if (!response.ok) throw new Error();
-
+      toast.success("Evaluación publicada.");
       await loadTemplates();
-    } catch (error) {
-      alert("Error al publicar");
+    } catch {
+      toast.error("No se pudo publicar la evaluación.");
     } finally {
       setSubmitting(false);
     }
@@ -161,10 +157,8 @@ export default function AdminEvaluationManager() {
 
   const assignEvaluation = async () => {
     if (!selectedEvaluationId || selectedUserIds.length === 0) return;
-
     try {
       setSubmitting(true);
-
       const response = await fetch("/api/dashboard/admin/evaluations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -174,44 +168,35 @@ export default function AdminEvaluationManager() {
           dueDate: assignDueDate || null,
         }),
       });
-
       if (!response.ok) throw new Error();
-
+      toast.success(`${selectedUserIds.length} usuario${selectedUserIds.length > 1 ? "s" : ""} asignado${selectedUserIds.length > 1 ? "s" : ""}.`);
       setSelectedUserIds([]);
-
-      await Promise.all([
-        loadAssignedUsers(selectedEvaluationId),
-        loadTemplates(),
-      ]);
-    } catch (error) {
-      alert("Error al asignar");
+      await Promise.all([loadAssignedUsers(selectedEvaluationId), loadTemplates()]);
+    } catch {
+      toast.error("No se pudo realizar la asignación. Intentá de nuevo.");
     } finally {
       setSubmitting(false);
     }
   };
 
   const unassignUser = async (userId: string) => {
-    const confirmDelete = confirm("¿Remover este usuario?");
-    if (!confirmDelete) return;
-
     try {
       const res = await fetch("/api/dashboard/admin/evaluations", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          templateId: selectedEvaluationId,
-          userId,
-        }),
+        body: JSON.stringify({ templateId: selectedEvaluationId, userId }),
       });
-
-      if (!res.ok) throw new Error();
-
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "No se pudo desasignar al usuario.");
+        return;
+      }
+      toast.success("Usuario desasignado.");
       setAssignedUsers((prev) => prev.filter((u) => u.id !== userId));
       setSelectedUserIds((prev) => prev.filter((id) => id !== userId));
-
       await loadTemplates();
-    } catch (err) {
-      alert("Error al desasignar");
+    } catch {
+      toast.error("Error al desasignar. Intentá de nuevo.");
     }
   };
 
