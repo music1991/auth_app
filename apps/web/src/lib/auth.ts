@@ -17,8 +17,6 @@ function getSecret() {
   return new TextEncoder().encode(process.env.JWT_SECRET);
 }
 
-const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
-
 export async function signSessionToken(userId: string, role: Role) {
   const now = Math.floor(Date.now() / 1000);
   const expiresIn = process.env.JWT_EXPIRES || "2h";
@@ -41,14 +39,6 @@ export async function verifySessionToken(token: string): Promise<Session | null>
     const sub = payload.sub ? String(payload.sub) : "";
     if (!sub) return null;
 
-    const lastActivitySec = Number(payload.lastActivity);
-    if (!Number.isFinite(lastActivitySec) || lastActivitySec <= 0) return null;
-
-    const lastActivityMs = lastActivitySec * 1000;
-    if (Date.now() - lastActivityMs > INACTIVITY_TIMEOUT) {
-      return null;
-    }
-
     const role: Role = payload.role === "admin" ? "admin" : "user";
 
     return {
@@ -56,7 +46,7 @@ export async function verifySessionToken(token: string): Promise<Session | null>
       role,
       iat: Number(payload.iat) || 0,
       exp: Number(payload.exp) || 0,
-      lastActivity: lastActivitySec,
+      lastActivity: Number(payload.lastActivity) || 0,
     };
   } catch {
     return null;
