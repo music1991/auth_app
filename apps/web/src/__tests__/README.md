@@ -676,10 +676,14 @@ Se implementaron con **Cypress v15** y se ejecutaron contra el servidor local (`
 | CY-04 | `presencia.cy.ts` | El panel de usuarios muestra indicadores de conexión | ✅ PASS |
 | CY-05 | `roles.cy.ts` | Admin puede acceder a `/dashboard/admin` | ✅ PASS |
 | CY-05 | `roles.cy.ts` | Usuario sin sesión es redirigido a login en todas las rutas protegidas | ✅ PASS |
+| CY-06 | `roi.cy.ts` | Sección ROI de Formación visible en pestaña Desempeño | ✅ PASS |
+| CY-06 | `roi.cy.ts` | Selector de línea de formación disponible con opciones cargadas | ✅ PASS |
+| CY-06 | `roi.cy.ts` | Request de ROI se dispara automáticamente al cargar la pestaña | ✅ PASS |
+| CY-06 | `roi.cy.ts` | Panel muestra comparativa base → actual de productividad | ✅ PASS |
 | CY-07 | `reset.cy.ts` | Muestra toast de confirmación al enviar email de reset | ✅ PASS |
 | CY-07 | `reset.cy.ts` | Token inválido redirige a `/reset/expired` y muestra error | ✅ PASS |
 
-**Total: 17 casos E2E — 17 passed, 0 failed**
+**Total: 21 casos E2E — 21 passed, 0 failed**
 
 ### 8.0.1 Configuración implementada
 
@@ -693,6 +697,7 @@ apps/web/
 │   │   ├── evaluaciones.cy.ts     # CY-03
 │   │   ├── presencia.cy.ts        # CY-04
 │   │   ├── roles.cy.ts            # CY-05
+│   │   ├── roi.cy.ts              # CY-06
 │   │   └── reset.cy.ts            # CY-07
 │   └── support/
 │       ├── commands.ts            # cy.loginAs() con cy.session() cacheado

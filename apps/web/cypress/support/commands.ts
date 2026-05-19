@@ -19,7 +19,8 @@ Cypress.Commands.add("loginAs", (email: string, password: string) => {
       cy.get('input[type="email"]').type(email);
       cy.get('input[type="password"]').type(password);
       cy.get('button[type="submit"]').click();
-      cy.url().should("include", "/dashboard");
+      // El login redirige a "/" via window.location.href, no a /dashboard directamente
+      cy.url().should("not.include", "/login");
     },
     {
       cacheAcrossSpecs: true,
