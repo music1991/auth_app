@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { analyticsDb } from "@/lib/db/analytics-db";
 
-// --- HELPERS ---
 const errorResponse = (msg: string, status = 500, details?: any) =>
   NextResponse.json(
     { error: msg, ...(details && { technical_details: details }) },
@@ -15,44 +14,40 @@ const authCheck = async () => {
   return session;
 };
 
-const parsePeriod = (period: string | null) => {
-  const allowed = new Set(["7d", "30d", "90d"]);
-  return allowed.has(period || "") ? period! : "30d";
-};
+function parseDate(value: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const d = new Date(trimmed);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
 
-// --- GET: detalle de desempeño de un usuario ---
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await authCheck();
     if (!session) return errorResponse("Unauthorized", 401);
 
-    const userId = context.params.id;
+    const { id: userId } = await context.params;
     if (!userId) return errorResponse("User ID is required", 400);
 
     const { searchParams } = new URL(request.url);
-    const period = parsePeriod(searchParams.get("period"));
+    const from = parseDate(searchParams.get("from"));
+    const to   = parseDate(searchParams.get("to"));
 
-    const data = await analyticsDb.getAdminUserPerformance(userId, period);
+    if (!from || !to) {
+      return errorResponse("Parámetros 'from' y 'to' son requeridos (formato YYYY-MM-DD)", 400);
+    }
 
+    const data = await analyticsDb.getAdminUserPerformance(userId, from, to);
     return NextResponse.json(data);
   } catch (error: any) {
-    console.error("❌ ERROR EN GET USER PERFORMANCE:");
-    console.error("Mensaje:", error.message);
-    console.error("Código DB:", error.code);
-    console.error("Stack:", error.stack);
-
+    console.error("❌ ERROR EN GET USER PERFORMANCE:", error.message);
     return NextResponse.json(
-      {
-        error: "Error interno al obtener desempeño del usuario",
-        message: error.message,
-        code: error.code,
-        hint:
-          error.hint ||
-          "Verifica que exista analyticsDb.getAdminUserPerformance(userId, period)",
-      },
+      { error: "Error interno al obtener desempeño del usuario", message: error.message },
       { status: 500 }
     );
   }

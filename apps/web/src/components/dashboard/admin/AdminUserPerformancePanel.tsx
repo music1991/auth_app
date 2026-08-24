@@ -15,15 +15,16 @@ interface UserPerformanceData {
 
 interface Props {
   userId: string;
-  period: string;
+  from: string;
+  to: string;
 }
 
-export default function AdminUserPerformancePanel({ userId, period }: Props) {
+export default function AdminUserPerformancePanel({ userId, from, to }: Props) {
   const [data, setData] = useState<UserPerformanceData | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!userId) {
+    if (!userId || !from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
       setData(null);
       return;
     }
@@ -32,10 +33,14 @@ export default function AdminUserPerformancePanel({ userId, period }: Props) {
       try {
         setLoading(true);
         const res = await fetch(
-          `/api/dashboard/admin/analytics/user/${userId}?period=${period}`,
+          `/api/dashboard/admin/analytics/user/${userId}?from=${from}&to=${to}`,
           { cache: "no-store" }
         );
-        if (!res.ok) throw new Error("Failed to load user performance");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.error("Error response from user performance API:", errData);
+          throw new Error(errData.error || "Failed to load user performance");
+        }
         const json = (await res.json()) as UserPerformanceData;
         setData(json);
       } catch (error) {
@@ -47,7 +52,7 @@ export default function AdminUserPerformancePanel({ userId, period }: Props) {
     };
 
     fetchUserStats();
-  }, [userId, period]);
+  }, [userId, from, to]);
 
   if (!userId) {
     return (
@@ -68,7 +73,7 @@ export default function AdminUserPerformancePanel({ userId, period }: Props) {
   if (!data) {
     return (
       <div className="bg-white border border-gray-200 rounded-2xl p-5 min-h-[300px] flex items-center justify-center text-gray-400">
-        No se pudo cargar el detalle
+        No se pudo cargar el detalle del usuario
       </div>
     );
   }
@@ -101,7 +106,7 @@ export default function AdminUserPerformancePanel({ userId, period }: Props) {
     {
       title: "Horas",
       value: `${data.total_hours}`,
-      subtitle: `Sesión ${period}`,
+      subtitle: `Sesión en período`,
       icon: Clock3,
     },
   ] as const;

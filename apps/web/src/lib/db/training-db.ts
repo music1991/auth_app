@@ -1,4 +1,4 @@
-﻿import { sql } from ".";
+import { sql } from ".";
 
 export const trainingDb = {
 
@@ -655,27 +655,51 @@ export const trainingDb = {
       completed_items: number;
       total_items: number;
     }>`
+      WITH
+      -- Get the data anchor: max date in productivity_metrics
+      data_range AS (
+        SELECT
+          MAX(date) AS max_date,
+          MIN(date) AS min_date
+        FROM productivity_metrics
+      ),
+      -- For each user in this line, compute baseline from first 30 days of their metrics
+      -- and current from last 30 days of their metrics (relative to max data date)
+      user_metrics AS (
+        SELECT
+          pm.user_id,
+          ROUND(AVG(pm.productivity_score) FILTER (
+            WHERE pm.date <= (SELECT min_date FROM data_range) + INTERVAL '30 days'
+          ), 1) AS baseline_prod,
+          ROUND(AVG(pm.productivity_score) FILTER (
+            WHERE pm.date >= (SELECT max_date FROM data_range) - INTERVAL '30 days'
+          ), 1) AS current_prod
+        FROM productivity_metrics pm
+        GROUP BY pm.user_id
+      ),
+      user_evals AS (
+        SELECT
+          e.user_id,
+          ROUND(AVG(CASE WHEN e.max_score > 0 AND e.status = 'completed'
+                    AND e.completed_date <= (SELECT min_date FROM data_range) + INTERVAL '60 days'
+                    THEN e.score * 100.0 / e.max_score END), 1) AS baseline_eval,
+          ROUND(AVG(CASE WHEN e.max_score > 0 AND e.status = 'completed'
+                    AND e.completed_date >= (SELECT max_date FROM data_range) - INTERVAL '60 days'
+                    THEN e.score * 100.0 / e.max_score END), 1) AS current_eval
+        FROM evaluations e
+        GROUP BY e.user_id
+      )
       SELECT
         snap.user_id,
         u.name AS user_name,
         snap.training_cost,
-        snap.avg_productivity     AS baseline_productivity,
-        snap.avg_eval_score       AS baseline_eval_score,
-        COALESCE(
-          (SELECT AVG(productivity_score)
-           FROM productivity_metrics
-           WHERE user_id = snap.user_id
-             AND date >= snap.snapshot_date),
-          0
-        ) AS current_productivity,
-        COALESCE(
-          (SELECT ROUND(AVG(CASE WHEN max_score > 0 THEN score * 100.0 / max_score END), 1)
-           FROM evaluations
-           WHERE user_id = snap.user_id
-             AND status = 'completed'
-             AND completed_date >= snap.snapshot_date),
-          0
-        ) AS current_eval_score,
+        -- Use snapshot baseline if valid (>0), otherwise fall back to computed first-30d avg
+        COALESCE(NULLIF(snap.avg_productivity, 0), COALESCE(um.baseline_prod, 0))
+          AS baseline_productivity,
+        COALESCE(NULLIF(snap.avg_eval_score, 0), COALESCE(ue.baseline_eval, 0))
+          AS baseline_eval_score,
+        COALESCE(um.current_prod, 0)   AS current_productivity,
+        COALESCE(ue.current_eval, 0)   AS current_eval_score,
         COALESCE(tlp.completed_items, 0) AS completed_items,
         COALESCE(tlp.total_items, 0)     AS total_items
       FROM training_roi_snapshots snap
@@ -683,6 +707,8 @@ export const trainingDb = {
       LEFT JOIN training_line_progress tlp
         ON tlp.user_id = snap.user_id
         AND tlp.training_line_id = snap.training_line_id
+      LEFT JOIN user_metrics um ON um.user_id = snap.user_id
+      LEFT JOIN user_evals ue ON ue.user_id = snap.user_id
       WHERE snap.training_line_id = ${trainingLineId}
       ORDER BY u.name ASC
     `;

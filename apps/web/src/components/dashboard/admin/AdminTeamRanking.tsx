@@ -13,13 +13,15 @@ interface TeamRankingItem {
 }
 
 interface Props {
-  period: string;
+  from: string;
+  to: string;
   selectedUserId: string;
   onSelectUser: (userId: string) => void;
 }
 
 export default function AdminTeamRanking({
-  period,
+  from,
+  to,
   selectedUserId,
   onSelectUser,
 }: Props) {
@@ -27,14 +29,22 @@ export default function AdminTeamRanking({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      return;
+    }
+
     const fetchRanking = async () => {
       try {
         setLoading(true);
         const res = await fetch(
-          `/api/dashboard/admin/analytics/team/ranking?period=${period}`,
+          `/api/dashboard/admin/analytics/team/ranking?from=${from}&to=${to}`,
           { cache: "no-store" }
         );
-        if (!res.ok) throw new Error("Failed to load ranking");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.error("Error response from ranking API:", errData);
+          throw new Error(errData.error || "Failed to load ranking");
+        }
         const data = await res.json();
         setRows(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -46,7 +56,7 @@ export default function AdminTeamRanking({
     };
 
     fetchRanking();
-  }, [period]);
+  }, [from, to]);
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-5">
@@ -60,7 +70,7 @@ export default function AdminTeamRanking({
       {loading ? (
         <div className="py-10 text-center text-gray-400">Cargando ranking...</div>
       ) : rows.length === 0 ? (
-        <div className="py-10 text-center text-gray-400">Sin datos disponibles</div>
+        <div className="py-10 text-center text-gray-400">Sin datos disponibles para este período</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px]">

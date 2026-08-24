@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-
-
 import AdminTeamStats from "./AdminTeamStats";
 import AdminPerformanceFilters from "./AdminPerformanceFilters";
 import AdminTeamRanking from "./AdminTeamRanking";
@@ -11,7 +9,11 @@ import AdminRoiPanel from "./AdminRoiPanel";
 
 export default function AdminPerformanceDashboard() {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [period, setPeriod] = useState("30d");
+  const [from, setFrom] = useState<string>("");
+  const [to, setTo]     = useState<string>("");
+
+  // Until the filter initializes, don't render data components
+  const ready = from && to;
 
   return (
     <div className="space-y-8">
@@ -24,35 +26,42 @@ export default function AdminPerformanceDashboard() {
         </div>
       </div>
 
-      <AdminTeamStats period={period} />
-
+      {/* Filters — sets from/to on mount via data-range endpoint */}
       <AdminPerformanceFilters
         selectedUserId={selectedUserId}
         onUserChange={setSelectedUserId}
-        period={period}
-        onPeriodChange={setPeriod}
+        from={from}
+        to={to}
+        onRangeChange={(f, t) => { setFrom(f); setTo(t); }}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2">
-          <AdminTeamRanking
-            period={period}
-            selectedUserId={selectedUserId}
-            onSelectUser={setSelectedUserId}
-          />
-        </div>
+      {ready && (
+        <>
+          <AdminTeamStats from={from} to={to} />
 
-        <div className="xl:col-span-1">
-          <AdminUserPerformancePanel
-            userId={selectedUserId}
-            period={period}
-          />
-        </div>
-      </div>
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-2">
+              <AdminTeamRanking
+                from={from}
+                to={to}
+                selectedUserId={selectedUserId}
+                onSelectUser={setSelectedUserId}
+              />
+            </div>
+            <div className="xl:col-span-1">
+              <AdminUserPerformancePanel
+                userId={selectedUserId}
+                from={from}
+                to={to}
+              />
+            </div>
+          </div>
 
-      <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-6">
-        <AdminRoiPanel />
-      </div>
+          <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-6">
+            <AdminRoiPanel />
+          </div>
+        </>
+      )}
     </div>
   );
 }

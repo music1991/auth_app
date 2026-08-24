@@ -21,22 +21,31 @@ interface AdminTeamStatsData {
 }
 
 interface Props {
-  period: string;
+  from: string;
+  to: string;
 }
 
-export default function AdminTeamStats({ period }: Props) {
+export default function AdminTeamStats({ from, to }: Props) {
   const [stats, setStats] = useState<AdminTeamStatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      return;
+    }
+
     const fetchStats = async () => {
       try {
         setLoading(true);
         const res = await fetch(
-          `/api/dashboard/admin/analytics/team?period=${period}`,
+          `/api/dashboard/admin/analytics/team?from=${from}&to=${to}`,
           { cache: "no-store" }
         );
-        if (!res.ok) throw new Error("Failed to load team stats");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.error("Error response from team stats API:", errData);
+          throw new Error(errData.error || "Failed to load team stats");
+        }
         const data = (await res.json()) as AdminTeamStatsData;
         setStats(data);
       } catch (error) {
@@ -48,7 +57,7 @@ export default function AdminTeamStats({ period }: Props) {
     };
 
     fetchStats();
-  }, [period]);
+  }, [from, to]);
 
   if (loading) {
     return (
@@ -69,8 +78,8 @@ export default function AdminTeamStats({ period }: Props) {
 
   if (!stats) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        Error loading team statistics
+      <div className="text-center py-8 text-gray-500 bg-red-50/50 border border-red-100 rounded-2xl p-4">
+        Error al cargar las estadísticas del equipo. Por favor, selecciona un rango de fechas válido.
       </div>
     );
   }
@@ -88,7 +97,7 @@ export default function AdminTeamStats({ period }: Props) {
     {
       title: "Activos",
       value: stats.active_users,
-      description: `Con sesiones en ${period}`,
+      description: `Con sesiones en el período`,
       icon: UserCheck,
       iconColor: "text-emerald-600",
       bgColor: "bg-emerald-50",
@@ -124,7 +133,7 @@ export default function AdminTeamStats({ period }: Props) {
     {
       title: "Horas",
       value: stats.total_session_hours,
-      description: `Sesión total (${period})`,
+      description: `Sesión total del período`,
       icon: Clock3,
       iconColor: "text-indigo-600",
       bgColor: "bg-indigo-50",
