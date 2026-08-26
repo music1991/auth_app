@@ -46,6 +46,7 @@ export default function TaskTemplateModal({
 }: TaskTemplateModalProps) {
   const [form, setForm] = useState<TaskTemplatePayload>(defaultForm);
   const [dbResources, setDbResources] = useState<ExistingResource[]>([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
   const [selectedDbIds, setSelectedDbIds] = useState<number[]>([]);
   const [pendingResources, setPendingResources] = useState<PendingResource[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -56,10 +57,11 @@ export default function TaskTemplateModal({
   if (!open) return;
 
   const fetchResources = async () => {
+    setResourcesLoading(true);
     try {
       // Importante: getAll() debe usar fetch("/api/resources") internamente
       const res = await resourceApi.getAll();
-      
+
       if (res.success) {
         setDbResources(res.data);
       } else {
@@ -70,6 +72,8 @@ export default function TaskTemplateModal({
       // Aquí verás el error que configuramos en el proxy (el API_BASE_URL)
       console.error("❌ Fallo crítico al traer recursos:", error);
       alert(`No se pudo conectar con el backend. Detalle: ${error}`);
+    } finally {
+      setResourcesLoading(false);
     }
   };
 
@@ -210,9 +214,10 @@ const handleSubmit = async (e: React.FormEvent) => {
             <div className="flex flex-wrap gap-2 mb-4">
               {selectedDbIds.map(id => {
                 const res = dbResources.find(r => r.id === id);
+                const label = res?.title ?? (resourcesLoading ? "Cargando..." : "Recurso no disponible");
                 return (
                   <div key={id} className="flex items-center gap-2 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs border border-blue-200">
-                    <span>{res?.title || `ID: ${id}`}</span>
+                    <span>{label}</span>
                     <button type="button" onClick={() => toggleExistingResource(id)} className="font-bold">✕</button>
                   </div>
                 );

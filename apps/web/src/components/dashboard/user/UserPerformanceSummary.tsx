@@ -14,19 +14,25 @@ interface UserPerformanceData {
 }
 
 interface Props {
-  period: string;
+  from: string;
+  to: string;
 }
 
-export default function UserPerformanceSummary({ period }: Props) {
+export default function UserPerformanceSummary({ from, to }: Props) {
   const [data, setData] = useState<UserPerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!from || !to) {
+      setData(null);
+      return;
+    }
+
     const fetchSummary = async () => {
       try {
         setLoading(true);
         const res = await fetch(
-          `/api/dashboard/user/analytics/summary?period=${period}`,
+          `/api/dashboard/user/analytics/summary?from=${from}&to=${to}`,
           { cache: "no-store" }
         );
         if (!res.ok) throw new Error("Failed to load performance summary");
@@ -41,7 +47,7 @@ export default function UserPerformanceSummary({ period }: Props) {
     };
 
     fetchSummary();
-  }, [period]);
+  }, [from, to]);
 
   if (loading) {
     return <div className="py-10 text-center text-gray-400">Cargando resumen...</div>;

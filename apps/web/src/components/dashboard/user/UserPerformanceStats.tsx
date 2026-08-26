@@ -15,19 +15,25 @@ interface UserPerformanceData {
 }
 
 interface Props {
-  period: string;
+  from: string;
+  to: string;
 }
 
-export default function UserPerformanceStats({ period }: Props) {
+export default function UserPerformanceStats({ from, to }: Props) {
   const [data, setData] = useState<UserPerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!from || !to) {
+      setData(null);
+      return;
+    }
+
     const fetchSummary = async () => {
       try {
         setLoading(true);
         const res = await fetch(
-          `/api/dashboard/user/analytics/summary?period=${period}`,
+          `/api/dashboard/user/analytics/summary?from=${from}&to=${to}`,
           { cache: "no-store" }
         );
         if (!res.ok) throw new Error("Failed to load performance summary");
@@ -42,7 +48,7 @@ export default function UserPerformanceStats({ period }: Props) {
     };
 
     fetchSummary();
-  }, [period]);
+  }, [from, to]);
 
   if (loading) {
     return (
@@ -102,7 +108,7 @@ export default function UserPerformanceStats({ period }: Props) {
     {
       title: "Horas",
       value: `${data.total_hours}`,
-      description: `Sesión ${period}`,
+      description: "Sesión en período",
       icon: Clock3,
       color: "text-indigo-600",
       bg: "bg-indigo-50",

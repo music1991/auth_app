@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import UserPerformanceFilters from "@/components/dashboard/user/UserPerformanceFilters";
 import UserPerformanceStats from "@/components/dashboard/user/UserPerformanceStats";
 import UserPerformanceSummary from "@/components/dashboard/user/UserPerformanceSummary";
 
 export default function UserPerformanceDashboard() {
-  const [period, setPeriod] = useState("30d");
+  const [from, setFrom] = useState<string>("");
+  const [to, setTo]     = useState<string>("");
+
+  const ready = Boolean(from && to);
 
   return (
     <div className="space-y-8">
@@ -16,29 +20,23 @@ export default function UserPerformanceDashboard() {
             Resumen de tu avance, evaluaciones y tiempo de dedicación
           </p>
         </div>
-
-        <div>
-          <p className="text-sm font-medium text-gray-700 mb-1">Período</p>
-          <div className="bg-white rounded-xl border border-gray-200 p-1 inline-flex gap-1">
-            {["7d", "30d", "90d"].map((item) => (
-              <button
-                key={item}
-                onClick={() => setPeriod(item)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  period === item
-                    ? "bg-green-500 text-white"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
-      <UserPerformanceStats period={period} />
-      <UserPerformanceSummary period={period} />
+      <UserPerformanceFilters
+        from={from}
+        to={to}
+        onRangeChange={(f, t) => {
+          setFrom(f);
+          setTo(t);
+        }}
+      />
+
+      {ready && (
+        <>
+          <UserPerformanceStats from={from} to={to} />
+          <UserPerformanceSummary from={from} to={to} />
+        </>
+      )}
     </div>
   );
 }
