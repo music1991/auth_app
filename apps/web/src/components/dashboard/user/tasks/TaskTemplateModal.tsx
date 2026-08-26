@@ -174,11 +174,11 @@ const handleSubmit = async (e: React.FormEvent) => {
 
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl max-h-[95vh] flex flex-col">
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <h3 className="text-lg font-semibold">{mode === "create" ? "Nueva plantilla" : "Editar plantilla"}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-black">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+      <div className="w-full max-w-2xl rounded-xl bg-card text-card-foreground border border-border shadow-2xl max-h-[95vh] flex flex-col">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h3 className="text-lg font-semibold text-foreground">{mode === "create" ? "Nueva plantilla" : "Editar plantilla"}</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 px-6 py-5">
@@ -186,25 +186,25 @@ const handleSubmit = async (e: React.FormEvent) => {
           <input 
             placeholder="Título" value={form.title} required
             onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-            className="w-full rounded-md border p-2" 
+            className="w-full rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground p-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" 
           />
           <textarea 
             placeholder="Descripción" value={form.description} required
             onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-            className="w-full rounded-md border p-2 h-20" 
+            className="w-full rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground p-2.5 h-24 text-sm outline-none focus:ring-2 focus:ring-ring" 
           />
 
           {/* Selector de Recursos Existentes */}
-          <div className="border-t pt-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Seleccionar recursos existentes</label>
+          <div className="border-t border-border pt-4">
+            <label className="block text-sm font-semibold text-foreground mb-2">Seleccionar recursos existentes</label>
             <select 
-              className="w-full rounded-md border p-2 mb-2"
+              className="w-full rounded-md border border-input bg-background text-foreground p-2.5 mb-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               onChange={(e) => toggleExistingResource(Number(e.target.value))}
               value=""
             >
-              <option value="" disabled>Selecciona un recurso guardado...</option>
+              <option value="" disabled className="bg-card text-card-foreground">Selecciona un recurso guardado...</option>
               {dbResources.map(r => (
-                <option key={r.id} value={r.id} disabled={selectedDbIds.includes(r.id)}>
+                <option key={r.id} value={r.id} disabled={selectedDbIds.includes(r.id)} className="bg-card text-card-foreground">
                   {r.title} ({r.type})
                 </option>
               ))}
@@ -216,9 +216,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                 const res = dbResources.find(r => r.id === id);
                 const label = res?.title ?? (resourcesLoading ? "Cargando..." : "Recurso no disponible");
                 return (
-                  <div key={id} className="flex items-center gap-2 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs border border-blue-200">
+                  <div key={id} className="flex items-center gap-2 bg-green-500/10 text-green-700 dark:text-green-300 px-2.5 py-1 rounded-md text-xs border border-green-500/20 font-medium">
                     <span>{label}</span>
-                    <button type="button" onClick={() => toggleExistingResource(id)} className="font-bold">✕</button>
+                    <button type="button" onClick={() => toggleExistingResource(id)} className="font-bold hover:text-green-900 dark:hover:text-green-100">✕</button>
                   </div>
                 );
               })}
@@ -226,20 +226,20 @@ const handleSubmit = async (e: React.FormEvent) => {
           </div>
 
           {/* Carga de nuevos recursos */}
-          <div className="border-t pt-4">
+          <div className="border-t border-border pt-4">
             <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-semibold">Cargar nuevos (PDF o Link)</label>
+              <label className="text-sm font-semibold text-foreground">Cargar nuevos (PDF o Link)</label>
               <div className="flex gap-2">
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs bg-gray-100 p-1 rounded">+ PDF</button>
-                <button type="button" onClick={addLinkResource} className="text-xs bg-gray-100 p-1 rounded">+ Link</button>
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs bg-muted hover:bg-muted/80 text-foreground px-2 py-1 rounded font-medium transition-colors">+ PDF</button>
+                <button type="button" onClick={addLinkResource} className="text-xs bg-muted hover:bg-muted/80 text-foreground px-2 py-1 rounded font-medium transition-colors">+ Link</button>
               </div>
               <input type="file" ref={fileInputRef} hidden accept=".pdf" onChange={handleFileChange} />
             </div>
 
             <div className="space-y-2">
               {pendingResources.map((res, i) => (
-                <div key={i} className="flex gap-2 items-center bg-gray-50 p-2 rounded border">
-                  <span className="text-xs uppercase font-bold">{res.type}</span>
+                <div key={i} className="flex gap-2 items-center bg-muted/40 p-2.5 rounded-lg border border-border">
+                  <span className="text-xs uppercase font-bold text-muted-foreground px-1">{res.type}</span>
                   {res.type === 'link' ? (
                     <input 
                       placeholder="URL..." value={res.url} required
@@ -248,22 +248,22 @@ const handleSubmit = async (e: React.FormEvent) => {
                         newRes[i].url = e.target.value;
                         setPendingResources(newRes);
                       }}
-                      className="flex-1 text-sm bg-transparent border-b" 
+                      className="flex-1 text-sm bg-transparent border-b border-border text-foreground placeholder:text-muted-foreground outline-none py-0.5" 
                     />
                   ) : (
-                    <span className="flex-1 text-sm truncate">{res.file?.name}</span>
+                    <span className="flex-1 text-sm truncate text-foreground">{res.file?.name}</span>
                   )}
-                  <button type="button" onClick={() => removePendingResource(i)} className="text-red-400">✕</button>
+                  <button type="button" onClick={() => removePendingResource(i)} className="text-red-500 hover:text-red-600 font-bold px-1 transition-colors">✕</button>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-100 rounded">Cancelar</button>
+          <div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
+            <button type="button" onClick={onClose} className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-sm font-medium transition-colors">Cancelar</button>
             <button 
               type="submit" disabled={isUploading || submitting}
-              className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
+              className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50 transition-colors shadow-sm"
             >
               {isUploading ? "Subiendo..." : "Guardar plantilla"}
             </button>

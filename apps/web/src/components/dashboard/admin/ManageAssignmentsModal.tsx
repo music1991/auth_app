@@ -63,7 +63,7 @@ export function ManageAssignmentsModal({
         <>
           <button
             onClick={onClose}
-            className="text-white font-bold px-4 py-2 bg-black hover:!bg-gray-500 rounded-lg"
+            className="text-foreground font-medium px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg text-sm transition-colors"
           >
             Cerrar
           </button>
@@ -71,7 +71,7 @@ export function ManageAssignmentsModal({
           <button
             onClick={onAssign}
             disabled={submitting || selectedUserIds.length === 0}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold disabled:opacity-50"
+            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-semibold text-sm disabled:opacity-50 shadow-sm transition-colors"
           >
             {submitting ? "Asignando..." : "Asignar seleccionados"}
           </button>
@@ -80,44 +80,44 @@ export function ManageAssignmentsModal({
     >
       <div className="space-y-6">
         <div>
-          <label className="text-xs font-bold text-gray-400 uppercase">Fecha Límite</label>
+          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Fecha Límite</label>
           <input
             type="date"
             min={new Date().toISOString().split("T")[0]}
             value={assignDueDate}
             onChange={(e) => onDueDateChange(e.target.value)}
-            className="w-full border rounded-lg p-2 mt-1 outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-input bg-background text-foreground rounded-lg p-2.5 mt-1 outline-none focus:ring-2 focus:ring-ring text-sm"
           />
         </div>
 
         {isLoading ? (
-          <p className="p-4 text-center text-xs">Cargando...</p>
+          <p className="p-4 text-center text-xs text-muted-foreground">Cargando...</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="text-xs font-bold text-gray-400 uppercase">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 Usuarios asignados ({assignedUsers.length})
               </label>
 
-              <div className="border rounded-lg mt-1 h-72 overflow-y-auto divide-y">
+              <div className="border border-border rounded-lg mt-1.5 h-72 overflow-y-auto divide-y divide-border bg-background">
                 {assignedUsers.length === 0 ? (
-                  <p className="p-4 text-center text-xs text-gray-400">
+                  <p className="p-4 text-center text-xs text-muted-foreground">
                     No hay usuarios asignados
                   </p>
                 ) : (
                   assignedUsers.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center justify-between gap-3 p-3 hover:bg-indigo-50 transition-colors"
+                      className="flex items-center justify-between gap-3 p-3 hover:bg-muted/50 transition-colors"
                     >
                       <div>
-                        <p className="text-sm font-bold text-gray-800">{user.name}</p>
-                        <p className="text-[10px] text-gray-500">{user.email}</p>
+                        <p className="text-sm font-semibold text-foreground">{user.name}</p>
+                        <p className="text-[11px] text-muted-foreground">{user.email}</p>
                       </div>
 
                       <button
                         onClick={() => onUnassign(user.id)}
-                        className="text-red-600 text-xs font-bold hover:underline"
+                        className="text-red-500 hover:text-red-600 text-xs font-semibold hover:underline"
                       >
                         Desasignar
                       </button>
@@ -128,13 +128,13 @@ export function ManageAssignmentsModal({
             </div>
 
             <div>
-              <label className="text-xs font-bold text-gray-400 uppercase">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 Seleccionar usuarios ({selectedUserIds.length})
               </label>
 
-              <div className="border rounded-lg mt-1 h-72 overflow-y-auto divide-y">
+              <div className="border border-border rounded-lg mt-1.5 h-72 overflow-y-auto divide-y divide-border bg-background">
                 {availableUsers.length === 0 ? (
-                  <p className="p-4 text-center text-xs text-gray-400">
+                  <p className="p-4 text-center text-xs text-muted-foreground">
                     No hay usuarios disponibles
                   </p>
                 ) : (
@@ -142,18 +142,18 @@ export function ManageAssignmentsModal({
                     <div
                       key={user.id}
                       onClick={() => onToggleUser(user.id)}
-                      className="flex items-center gap-3 p-3 hover:bg-indigo-50 cursor-pointer transition-colors"
+                      className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors"
                     >
                       <input
                         type="checkbox"
                         checked={user.selected}
                         readOnly
-                        className="rounded border-gray-300 text-indigo-600"
+                        className="rounded border-input text-green-600 focus:ring-ring"
                       />
 
                       <div>
-                        <p className="text-sm font-bold text-gray-800">{user.name}</p>
-                        <p className="text-[10px] text-gray-500">{user.email}</p>
+                        <p className="text-sm font-semibold text-foreground">{user.name}</p>
+                        <p className="text-[11px] text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
                   ))
