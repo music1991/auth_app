@@ -22,7 +22,7 @@ interface PendingResource {
 
 // Interfaz para los recursos que vienen de la DB
 interface ExistingResource {
-  id: number;
+  id: string;
   title: string;
   url: string;
   type: string;
@@ -47,7 +47,7 @@ export default function TaskTemplateModal({
   const [form, setForm] = useState<TaskTemplatePayload>(defaultForm);
   const [dbResources, setDbResources] = useState<ExistingResource[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
-  const [selectedDbIds, setSelectedDbIds] = useState<number[]>([]);
+  const [selectedDbIds, setSelectedDbIds] = useState<string[]>([]);
   const [pendingResources, setPendingResources] = useState<PendingResource[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,15 +79,21 @@ export default function TaskTemplateModal({
 
   fetchResources();
 
+  // Los recursos pendientes son solo un buffer de "borrador" mientras el
+  // modal está abierto: si no se limpian acá, al reabrir (crear o editar)
+  // seguían apareciendo como recién agregados aunque ya se hubieran guardado.
+  setPendingResources([]);
+
   if (mode === "edit" && template) {
-    // Aseguramos que requirements sea un array antes de mapear
+    // Aseguramos que requirements sea un array antes de mapear.
+    // Los IDs de recursos son UUID (string): NO castear con Number(),
+    // porque eso los convierte en NaN y rompe la selección/el guardado.
     const reqs = template.requirements || [];
     setForm({ ...template, requirements: reqs });
-    setSelectedDbIds(reqs.map(Number));
+    setSelectedDbIds(reqs.map(String));
   } else {
     setForm(defaultForm);
     setSelectedDbIds([]);
-    setPendingResources([]);
   }
 }, [open, mode, template]); // Agregué dependencias para evitar warnings de React
 
@@ -96,8 +102,8 @@ export default function TaskTemplateModal({
 
   // --- LÓGICA DE SELECCIÓN Y CARGA ---
 
-  const toggleExistingResource = (id: number) => {
-    setSelectedDbIds(prev => 
+  const toggleExistingResource = (id: string) => {
+    setSelectedDbIds(prev =>
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
   };
@@ -199,7 +205,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             <label className="block text-sm font-semibold text-foreground mb-2">Seleccionar recursos existentes</label>
             <select 
               className="w-full rounded-md border border-input bg-background text-foreground p-2.5 mb-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              onChange={(e) => toggleExistingResource(Number(e.target.value))}
+              onChange={(e) => toggleExistingResource(e.target.value)}
               value=""
             >
               <option value="" disabled className="bg-card text-card-foreground">Selecciona un recurso guardado...</option>
