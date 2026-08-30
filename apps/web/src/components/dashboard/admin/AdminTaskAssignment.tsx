@@ -145,7 +145,13 @@ function TemplateCard({ template, onEdit, onDelete, onAssign }: {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function AdminTaskAssignment() {
+export default function AdminTaskAssignment({
+  initialAssignUserId,
+  onConsumeInitialAssignUserId,
+}: {
+  initialAssignUserId?: string | null;
+  onConsumeInitialAssignUserId?: () => void;
+} = {}) {
   const { templates, loading: templatesLoading, submitting, error: templatesError, createTemplate, editTemplate, removeTemplate } = useTaskTemplates();
 
   const [activeTab, setActiveTab] = useState<"board" | "templates">("board");
@@ -193,13 +199,19 @@ export default function AdminTaskAssignment() {
   const titleFor = (templateId: string) =>
     templates.find((t) => t.id === templateId)?.title ?? "Tarea";
 
-  const openDrawer = (template?: TaskTemplate) => {
+  const openDrawer = (template?: TaskTemplate, presetUserId?: string) => {
     setDrawerTemplate(template ?? null);
-    setSelectedUserId("");
+    setSelectedUserId(presetUserId ?? "");
     setDueDate("");
     setInstructions("");
     setDrawerOpen(true);
   };
+
+  useEffect(() => {
+    if (!initialAssignUserId) return;
+    openDrawer(undefined, initialAssignUserId);
+    onConsumeInitialAssignUserId?.();
+  }, [initialAssignUserId]);
 
   const handleAssign = async () => {
     if (!drawerTemplate || !selectedUserId || !dueDate) return;

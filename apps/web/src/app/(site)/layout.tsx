@@ -20,7 +20,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     <>
       <SessionGuard />
       <PresencePing user={userSession} />
-      <Navbar role={session.role} />
+      <Navbar role={session.role} name={userSession.name} />
       <div className="w-full">
         <section>{children}</section>
       </div>

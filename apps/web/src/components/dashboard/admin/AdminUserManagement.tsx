@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
-  Ban,
   BarChart3,
   Calendar,
   CheckCircle2,
@@ -256,7 +255,7 @@ function TaskDetailView({
   );
 }
 
-export default function AdminUserManagement() {
+export default function AdminUserManagement({ onAssignTask }: { onAssignTask: (userId: string) => void }) {
   const [users, setUsers] = useState<AdminManagedUser[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -557,11 +556,10 @@ export default function AdminUserManagement() {
 
                       <div className="space-y-3 pt-4">
                         <button
-                          disabled
-                          title="Esta acción se gestiona desde la pestaña de asignación de tareas"
-                          className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-gray-200 py-3 font-medium text-gray-500"
+                          onClick={() => onAssignTask(selectedUser.id)}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 py-3 font-medium text-white transition-all hover:bg-green-700 active:scale-95"
                         >
-                          <Ban size={16} />
+                          <ClipboardList size={16} />
                           Asignar Nueva Tarea
                         </button>
                         <button className="w-full rounded-xl border border-gray-200 py-3 font-medium text-gray-600 transition-all hover:bg-gray-50">

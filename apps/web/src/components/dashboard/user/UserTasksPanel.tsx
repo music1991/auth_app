@@ -375,12 +375,6 @@ function TaskDrawer({
                     onChange={(e) => onProgressChange(Number(e.target.value))}
                     className="w-full accent-green-500"
                   />
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
-                    <div
-                      className="h-full rounded-full bg-green-500 transition-all"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
                 </div>
 
                 <div>

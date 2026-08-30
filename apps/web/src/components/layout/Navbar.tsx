@@ -11,7 +11,7 @@ interface NavItem {
   adminOnly?: boolean;
 }
 
-export function Navbar({ role }: { role: string }) {
+export function Navbar({ role, name }: { role: string; name: string }) {
   const pathname = usePathname();
   const isAdmin = role === "admin";
 
@@ -60,6 +60,12 @@ export function Navbar({ role }: { role: string }) {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
+          <span className="hidden max-w-[140px] truncate text-sm font-medium text-gray-600 dark:text-slate-300 sm:inline-block">
+            {name}
+            {isAdmin && (
+              <span className="font-normal text-gray-400 dark:text-slate-500"> (Admin)</span>
+            )}
+          </span>
           <ThemeMenu />
           <ProfileButton />
         </div>

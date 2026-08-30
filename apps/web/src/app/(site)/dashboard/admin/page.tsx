@@ -20,6 +20,12 @@ type TabId = (typeof TABS)[number]["id"];
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<TabId>("users");
+  const [pendingAssignUserId, setPendingAssignUserId] = useState<string | null>(null);
+
+  const goAssignTask = (userId: string) => {
+    setPendingAssignUserId(userId);
+    setActiveTab("tasks");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -59,8 +65,13 @@ export default function AdminDashboardPage() {
 
         {/* Tab content */}
         <div className="rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg">
-          {activeTab === "users"       && <AdminUserManagement />}
-          {activeTab === "tasks"       && <AdminTaskAssignment />}
+          {activeTab === "users"       && <AdminUserManagement onAssignTask={goAssignTask} />}
+          {activeTab === "tasks"       && (
+            <AdminTaskAssignment
+              initialAssignUserId={pendingAssignUserId}
+              onConsumeInitialAssignUserId={() => setPendingAssignUserId(null)}
+            />
+          )}
           {activeTab === "evaluations" && <AdminEvaluationManager />}
           {activeTab === "training"    && <AdminTrainingManager />}
           {activeTab === "performance" && <AdminPerformanceDashboard />}
