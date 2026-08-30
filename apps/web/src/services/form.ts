@@ -1,7 +1,7 @@
 const urlServer = process.env.NEXT_PUBLIC_SERVICES_URL;
 
 async function patchEvaluationStatus(evaluationId: string, status: string): Promise<boolean> {
-  const response = await fetch(`${urlServer}/api/form`, {
+  const response = await fetch(`${urlServer}/form`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ evaluationId, status }),
