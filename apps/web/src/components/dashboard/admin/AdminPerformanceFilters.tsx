@@ -35,6 +35,18 @@ function formatDateStr(dateIso: string): string {
   return `${dd}/${mm}/${yyyy}`;
 }
 
+/** Formats an ISO date or date-time string as "dd/mm/aaaa y hh:mm" (UTC, matching the stored date). */
+function formatDateTimeStr(dateIso: string): string {
+  const d = new Date(dateIso);
+  if (isNaN(d.getTime())) return dateIso;
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const yyyy = d.getUTCFullYear();
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const min = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} y ${hh}:${min}`;
+}
+
 export default function AdminPerformanceFilters({
   selectedUserId,
   onUserChange,
@@ -288,10 +300,10 @@ export default function AdminPerformanceFilters({
               ⚠️ ¡Alerta de Inactividad en el Rango Seleccionado! ({gap.overlapDays} días sin datos)
             </p>
             <p className="text-xs leading-relaxed text-amber-800">
-              Dentro del período seleccionado, entre el <strong className="underline">{formatDateStr(gap.gapFrom)}</strong> y el <strong className="underline">{formatDateStr(gap.gapTo)}</strong> ({gap.overlapDays} días) no existen registros de tareas, evaluaciones ni sesiones de trabajo.
+              Dentro del período seleccionado, entre el <strong className="underline">{formatDateTimeStr(gap.gapFrom)}</strong> y el <strong className="underline">{formatDateTimeStr(gap.gapTo)}</strong> ({gap.overlapDays} días) no existen registros de tareas, evaluaciones ni sesiones de trabajo.
             </p>
             <p className="text-xs font-medium text-amber-900">
-              💡 <strong>Sugerencia:</strong> Se recomienda acotar la fecha &quot;Hasta&quot; al <strong>{formatDateStr(gap.suggestedTo)}</strong> para evaluar únicamente el período con actividad real.
+              💡 <strong>Sugerencia:</strong> Se recomienda acotar la fecha &quot;Hasta&quot; al <strong>{formatDateTimeStr(gap.suggestedTo)}</strong> para evaluar únicamente el período con actividad real.
             </p>
           </div>
         </div>

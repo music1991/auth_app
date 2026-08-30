@@ -77,6 +77,11 @@ function normalizeUrl(url?: string) {
   return `https://${url}`;
 }
 
+function truncateUrl(url?: string, max = 20) {
+  if (!url) return "";
+  return url.length > max ? `${url.slice(0, max)}…` : url;
+}
+
 function getResourceTypeLabel(type?: string) {
   switch (type?.toLowerCase()) {
     case "pdf": return "PDF";
@@ -324,23 +329,37 @@ function TaskDrawer({
                 <div>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Recursos</p>
                   <div className="space-y-1.5">
-                    {task.resources.map((r) => (
-                      <a
-                        key={r.id}
-                        href={normalizeUrl(r.url)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm transition hover:border-green-200 hover:bg-green-50/40"
-                      >
-                        <span className="truncate font-medium text-gray-700">{r.name}</span>
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-500 uppercase">
-                            {getResourceTypeLabel(r.type)}
+                    {task.resources.map((r) => {
+                      const isLink = r.type?.toLowerCase() === "link";
+                      return (
+                        <a
+                          key={r.id}
+                          href={normalizeUrl(r.url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm transition hover:border-green-200 hover:bg-green-50/40"
+                        >
+                          <span className="truncate font-medium text-gray-700">
+                            {isLink ? (
+                              <>
+                                Link{" "}
+                                <span className="font-normal text-gray-400">{truncateUrl(r.url)}</span>
+                              </>
+                            ) : (
+                              r.name
+                            )}
                           </span>
-                          <ExternalLink size={12} className="text-gray-400" />
-                        </div>
-                      </a>
-                    ))}
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            {!isLink && (
+                              <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-500 uppercase">
+                                {getResourceTypeLabel(r.type)}
+                              </span>
+                            )}
+                            <ExternalLink size={12} className="text-gray-400" />
+                          </div>
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               )}
