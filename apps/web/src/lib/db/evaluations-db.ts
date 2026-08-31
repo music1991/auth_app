@@ -1,4 +1,5 @@
 ﻿import { sql } from ".";
+import type { EvaluationAssignmentStatus } from "@/types";
 
 // ==========================================
 // SECTION: EVALUATION TEMPLATES
@@ -115,8 +116,9 @@ export const evaluationsDb = {
       SELECT
         ${data.templateId}, u, ${data.assignedBy},
         'pending', CURRENT_TIMESTAMP, ${data.dueDate ?? null},
-        0, 0, '{}'::jsonb
+        0, et.max_score, '{}'::jsonb
       FROM unnest(${toAssign}::uuid[]) AS u
+      CROSS JOIN (SELECT max_score FROM evaluation_templates WHERE id = ${data.templateId}) et
       ON CONFLICT DO NOTHING
     `;
   },
@@ -141,6 +143,43 @@ export const evaluationsDb = {
       name: row.name,
       email: row.email,
       isCompleted: !!row.completed_date,
+    }));
+  },
+
+  async getEvaluationResultsByTemplate(templateId: string) {
+    const rows = await sql<{
+      id: string;
+      user_id: string;
+      name: string;
+      email: string;
+      status: EvaluationAssignmentStatus;
+      due_date: string | null;
+      completed_date: string | null;
+      score: number | null;
+      max_score: number | null;
+      responses: Record<string, string | string[]> | null;
+    }>`
+      SELECT e.id, u.id as user_id, u.name, u.email,
+             e.status, e.due_date, e.completed_date, e.score,
+             COALESCE(NULLIF(e.max_score, 0), et.max_score) as max_score,
+             e.responses
+      FROM evaluations e
+      JOIN users u ON u.id = e.user_id
+      JOIN evaluation_templates et ON et.id = e.template_id
+      WHERE e.template_id = ${templateId}
+      ORDER BY u.name ASC
+    `;
+    return rows.map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      name: row.name,
+      email: row.email,
+      status: row.status,
+      dueDate: row.due_date,
+      completedDate: row.completed_date,
+      score: row.score,
+      maxScore: row.max_score,
+      responses: row.responses,
     }));
   },
 

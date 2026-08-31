@@ -13,8 +13,8 @@ import {
   X,
 } from "lucide-react";
 
-import { finishEvaluation, startEvaluation } from "@/services/form";
-import { formatDateShort } from "@/lib/utils";
+import { startEvaluation } from "@/services/form";
+import { formatDateShort, isEvaluationExpired } from "@/lib/utils";
 import { EVALUATION_TYPE_LABELS } from "@/lib/constants";
 import { EvaluationType } from "@/types";
 import EvaluationFormModal from "../EvaluationFormModal";
@@ -44,16 +44,6 @@ interface UserEvaluation {
   google_form_id?: string | null;
   type: string;
   online: boolean;
-}
-
-function isEvaluationExpired(dueDate?: string | null) {
-  if (!dueDate) return false;
-  const due = new Date(dueDate.replace(/"/g, "").trim());
-  if (isNaN(due.getTime())) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  due.setHours(0, 0, 0, 0);
-  return today > due;
 }
 
 function parseJson<T>(value: T | string | null | undefined, fallback: T): T {
@@ -125,7 +115,7 @@ function EvalCard({
 }) {
   const rawStatus = evaluation.status ?? "pending";
   const isExpired = isEvaluationExpired(evaluation.dueDate) && rawStatus !== "completed";
-  const status: EvaluationStatus = isExpired && rawStatus === "pending" ? "expired" : rawStatus;
+  const status: EvaluationStatus = isExpired ? "expired" : rawStatus;
   const config = COLUMN_CONFIG[status];
   const score = getEvaluationScore(evaluation);
 
@@ -216,7 +206,7 @@ function EvalDrawer({
 }) {
   const rawStatus = evaluation.status ?? "pending";
   const isExpired = isEvaluationExpired(evaluation.dueDate) && rawStatus !== "completed";
-  const status: EvaluationStatus = isExpired && rawStatus === "pending" ? "expired" : rawStatus;
+  const status: EvaluationStatus = isExpired ? "expired" : rawStatus;
   const config = COLUMN_CONFIG[status];
   const details = parseDetails(evaluation.details);
   const score = getEvaluationScore(evaluation);
@@ -349,11 +339,11 @@ export default function UserEvaluationsPanel() {
         const s = e.status ?? "pending";
         return s === "pending" && !isEvaluationExpired(e.dueDate);
       }),
-      in_progress: evaluations.filter((e) => e.status === "in_progress"),
+      in_progress: evaluations.filter((e) => e.status === "in_progress" && !isEvaluationExpired(e.dueDate)),
       completed: evaluations.filter((e) => e.status === "completed"),
       expired: evaluations.filter((e) => {
         const s = e.status ?? "pending";
-        return s === "expired" || (s === "pending" && isEvaluationExpired(e.dueDate));
+        return (s === "pending" || s === "in_progress") && isEvaluationExpired(e.dueDate);
       }),
     };
   }, [evaluations]);
@@ -400,18 +390,12 @@ export default function UserEvaluationsPanel() {
   };
 
   const handleCloseFormModal = async () => {
-    try {
-      if (selectedId) {
-        const success = await finishEvaluation(selectedId);
-        if (success) await fetchEvaluations();
-      }
-    } catch {
-      // silent
-    } finally {
-      setIsFormModalOpen(false);
-      setActiveGoogleFormId(null);
-      setActiveGoogleFormTitle("");
-    }
+    setIsFormModalOpen(false);
+    setActiveGoogleFormId(null);
+    setActiveGoogleFormTitle("");
+    // El cierre del modal no confirma el envío del formulario: el estado
+    // "completed" y el score solo los asigna el webhook de Google Forms.
+    await fetchEvaluations();
   };
 
   useEffect(() => { fetchEvaluations(); }, []);

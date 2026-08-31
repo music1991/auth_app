@@ -1,13 +1,21 @@
 "use client";
 
-import { AdminUser, EvaluationTemplateItem, NewEvaluationFormData } from "@/types";
+import { AdminUser, EvaluationResultRow, EvaluationTemplateItem, NewEvaluationFormData } from "@/types";
 import { INITIAL_EVALUATION_FORM } from "@/lib/constants";
 import { buildAssignmentUsers } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { EvaluationCard } from "../EvaluationCard";
 import { CreateEvaluationForm } from "./CreateEvaluationForm";
+import { EvaluationResultsView } from "./EvaluationResultsView";
 import { ManageAssignmentsModal } from "./ManageAssignmentsModal";
+
+type AdminEvaluationsTab = "templates" | "results";
+
+const EVALUATIONS_TABS: { id: AdminEvaluationsTab; label: string }[] = [
+  { id: "templates", label: "Plantillas" },
+  { id: "results", label: "Resultados" },
+];
 
 export default function AdminEvaluationManager() {
   const [evaluations, setEvaluations] = useState<EvaluationTemplateItem[]>([]);
@@ -29,6 +37,11 @@ export default function AdminEvaluationManager() {
 
   const [newEvaluation, setNewEvaluation] =
     useState<NewEvaluationFormData>(INITIAL_EVALUATION_FORM);
+
+  const [activeTab, setActiveTab] = useState<AdminEvaluationsTab>("templates");
+  const [resultsTemplateId, setResultsTemplateId] = useState<string | null>(null);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [evaluationResults, setEvaluationResults] = useState<EvaluationResultRow[]>([]);
 
   useEffect(() => {
     loadTemplates();
@@ -80,6 +93,34 @@ export default function AdminEvaluationManager() {
     } finally {
       setAssignedLoading(false);
     }
+  };
+
+  const loadResults = async (templateId: string) => {
+    try {
+      setResultsLoading(true);
+      const res = await fetch(
+        `/api/dashboard/admin/evaluations?templateId=${templateId}&results=1`
+      );
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setEvaluationResults(Array.isArray(data) ? data : []);
+    } catch {
+      toast.error("No se pudieron cargar los resultados. Intentá de nuevo.");
+      setEvaluationResults([]);
+    } finally {
+      setResultsLoading(false);
+    }
+  };
+
+  const viewResults = (templateId: string) => {
+    setActiveTab("results");
+    setResultsTemplateId(templateId);
+    void loadResults(templateId);
+  };
+
+  const selectResultsTemplate = (templateId: string) => {
+    setResultsTemplateId(templateId);
+    void loadResults(templateId);
   };
 
   const updateNewEvaluation = (patch: Partial<NewEvaluationFormData>) => {
@@ -212,36 +253,65 @@ export default function AdminEvaluationManager() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">Gestor de Evaluaciones</h2>
-
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-500 transition-colors"
-        >
-          + Nueva Plantilla
-        </button>
-      </div>
-
-      <CreateEvaluationForm
-        open={showCreateForm}
-        newEvaluation={newEvaluation}
-        submitting={submitting}
-        onClose={resetCreateForm}
-        onChange={updateNewEvaluation}
-        onSubmit={createTemplate}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {evaluations.map((evaluation) => (
-          <EvaluationCard
-            key={evaluation.id}
-            evaluation={evaluation}
-            onPublish={publishTemplate}
-            onManageAssignments={openAssignmentsModal}
-          />
+      <div className="flex w-full rounded-2xl border border-gray-200 bg-white/80 p-1 backdrop-blur-sm">
+        {EVALUATIONS_TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+              activeTab === id
+                ? "bg-indigo-600 text-white shadow-md"
+                : "text-gray-600 hover:bg-white hover:text-gray-900"
+            }`}
+          >
+            {label}
+          </button>
         ))}
       </div>
+
+      {activeTab === "templates" ? (
+        <div className="space-y-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-800">Gestor de Evaluaciones</h2>
+
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-500 transition-colors"
+            >
+              + Nueva Plantilla
+            </button>
+          </div>
+
+          <CreateEvaluationForm
+            open={showCreateForm}
+            newEvaluation={newEvaluation}
+            submitting={submitting}
+            onClose={resetCreateForm}
+            onChange={updateNewEvaluation}
+            onSubmit={createTemplate}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {evaluations.map((evaluation) => (
+              <EvaluationCard
+                key={evaluation.id}
+                evaluation={evaluation}
+                onPublish={publishTemplate}
+                onManageAssignments={openAssignmentsModal}
+                onViewResults={viewResults}
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <EvaluationResultsView
+          templates={evaluations}
+          selectedTemplateId={resultsTemplateId}
+          onSelectTemplate={selectResultsTemplate}
+          results={evaluationResults}
+          loading={resultsLoading}
+        />
+      )}
 
       <ManageAssignmentsModal
         open={showAssignmentsModal}

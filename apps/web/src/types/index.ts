@@ -155,6 +155,19 @@ export interface EvaluationTemplateItem {
   online: boolean;
 }
 
+export interface EvaluationResultRow {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  status: EvaluationAssignmentStatus;
+  dueDate: string | null;
+  completedDate: string | null;
+  score: number | null;
+  maxScore: number | null;
+  responses: Record<string, string | string[]> | null;
+}
+
 export interface AdminUser {
   id: string;
   name: string;

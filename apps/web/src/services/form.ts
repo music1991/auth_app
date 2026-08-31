@@ -23,12 +23,3 @@ export const startEvaluation = async (evaluationId: string): Promise<boolean> =>
     return false;
   }
 };
-
-export const finishEvaluation = async (evaluationId: string): Promise<boolean> => {
-  try {
-    return await patchEvaluationStatus(evaluationId, "completed");
-  } catch (error) {
-    console.error("Error en finishEvaluation:", error);
-    return false;
-  }
-};

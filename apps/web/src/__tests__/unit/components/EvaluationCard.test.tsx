@@ -37,6 +37,7 @@ const baseEval: EvaluationTemplateItem = {
 
 const noopPublish = jest.fn();
 const noopManage = jest.fn();
+const noopViewResults = jest.fn();
 
 afterEach(() => {
   jest.clearAllMocks();
@@ -52,6 +53,7 @@ describe("EvaluationCard — contenido", () => {
         evaluation={baseEval}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(screen.getByText("Evaluación de Skills Q1 2026")).toBeInTheDocument();
@@ -63,6 +65,7 @@ describe("EvaluationCard — contenido", () => {
         evaluation={baseEval}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(
@@ -76,6 +79,7 @@ describe("EvaluationCard — contenido", () => {
         evaluation={baseEval}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(screen.getByText("Skills")).toBeInTheDocument();
@@ -87,6 +91,7 @@ describe("EvaluationCard — contenido", () => {
         evaluation={baseEval}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(screen.getByText("Online")).toBeInTheDocument();
@@ -98,6 +103,7 @@ describe("EvaluationCard — contenido", () => {
         evaluation={{ ...baseEval, online: false }}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(screen.getByText("Presencial")).toBeInTheDocument();
@@ -109,6 +115,7 @@ describe("EvaluationCard — contenido", () => {
         evaluation={baseEval}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(screen.getByText("Sin publicar")).toBeInTheDocument();
@@ -120,6 +127,7 @@ describe("EvaluationCard — contenido", () => {
         evaluation={{ ...baseEval, status: "active" }}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(screen.getByText("Publicada")).toBeInTheDocument();
@@ -131,6 +139,7 @@ describe("EvaluationCard — contenido", () => {
         evaluation={{ ...baseEval, status: "completed" }}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(screen.getByText("Finalizada")).toBeInTheDocument();
@@ -142,6 +151,7 @@ describe("EvaluationCard — contenido", () => {
         evaluation={baseEval}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(screen.getByText("5")).toBeInTheDocument();
@@ -153,6 +163,7 @@ describe("EvaluationCard — contenido", () => {
         evaluation={baseEval}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(screen.getByText(/31\/03\/2026/)).toBeInTheDocument();
@@ -169,6 +180,7 @@ describe("EvaluationCard — botón Publicar (RF-11)", () => {
         evaluation={baseEval}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(screen.getByRole("button", { name: /publicar/i })).toBeInTheDocument();
@@ -180,6 +192,7 @@ describe("EvaluationCard — botón Publicar (RF-11)", () => {
         evaluation={{ ...baseEval, status: "active" }}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(
@@ -193,6 +206,7 @@ describe("EvaluationCard — botón Publicar (RF-11)", () => {
         evaluation={{ ...baseEval, status: "completed" }}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     expect(
@@ -211,6 +225,7 @@ describe("EvaluationCard — interacciones", () => {
         evaluation={baseEval}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: /publicar/i }));
@@ -224,6 +239,7 @@ describe("EvaluationCard — interacciones", () => {
         evaluation={baseEval}
         onPublish={noopPublish}
         onManageAssignments={noopManage}
+        onViewResults={noopViewResults}
       />
     );
     fireEvent.click(
@@ -245,6 +261,7 @@ describe("EvaluationCard — interacciones", () => {
           evaluation={{ ...baseEval, status }}
           onPublish={noopPublish}
           onManageAssignments={noopManage}
+          onViewResults={noopViewResults}
         />
       );
       expect(

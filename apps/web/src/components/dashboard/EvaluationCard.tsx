@@ -1,5 +1,7 @@
 "use client";
 
+import { BarChart3 } from "lucide-react";
+
 import { formatDateShort } from "@/lib/utils";
 
 import { StatItem } from "./StatItem";
@@ -10,12 +12,14 @@ interface EvaluationCardProps {
   evaluation: EvaluationTemplateItem;
   onPublish: (templateId: string) => void;
   onManageAssignments: (templateId: string, dueDate: string | null) => void;
+  onViewResults: (templateId: string) => void;
 }
 
 export function EvaluationCard({
   evaluation,
   onPublish,
   onManageAssignments,
+  onViewResults,
 }: EvaluationCardProps) {
   return (
     <div className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
@@ -69,6 +73,14 @@ export function EvaluationCard({
           className="flex-1 border text-gray-700 text-xs font-bold py-2 rounded-lg hover:bg-gray-50"
         >
           Gestionar asignaciones
+        </button>
+
+        <button
+          onClick={() => onViewResults(evaluation.id)}
+          className="flex-1 flex items-center justify-center gap-1 border text-gray-700 text-xs font-bold py-2 rounded-lg hover:bg-gray-50"
+        >
+          <BarChart3 size={13} />
+          Ver resultados
         </button>
       </div>
     </div>

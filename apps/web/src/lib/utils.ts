@@ -23,6 +23,16 @@ export function extractGoogleFormId(url: string): string {
   return match ? match[1] : url;
 }
 
+export function isEvaluationExpired(dueDate?: string | null): boolean {
+  if (!dueDate) return false;
+  const due = new Date(dueDate.replace(/"/g, "").trim());
+  if (isNaN(due.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  return today > due;
+}
+
 export function normalizeDateInput(value: string): string {
   if (!value) return "";
   if (value.includes("T")) return value.replace(/"/g, "").split("T")[0];

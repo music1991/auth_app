@@ -48,6 +48,11 @@ export async function GET(request: NextRequest) {
     const templateId = searchParams.get("templateId");
     if (!templateId) return errorResponse("templateId es requerido", 400);
 
+    if (searchParams.get("results") === "1") {
+      const results = await evaluationsDb.getEvaluationResultsByTemplate(templateId);
+      return NextResponse.json(results);
+    }
+
     const users = await evaluationsDb.getAssignedUsersByTemplate(templateId);
     return NextResponse.json(
       users.map((u) => ({
