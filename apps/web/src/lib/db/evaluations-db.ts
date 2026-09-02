@@ -220,15 +220,18 @@ export const evaluationsDb = {
       type: string;
       google_form_id: string;
       online: boolean;
+      assigned_by_name: string | null;
     }>`
       SELECT
         e.id, e.template_id, e.user_id, e.assigned_by,
         e.status, e.assigned_date, e.due_date, e.completed_date,
-        e.score, e.max_score, e.responses,
+        e.score, COALESCE(NULLIF(e.max_score, 0), et.max_score) as max_score, e.responses,
         et.title, et.description, et.type,
-        et.google_form_id as google_form_id, et.online, et.passing_score_pct
+        et.google_form_id as google_form_id, et.online, et.passing_score_pct,
+        assigner.name as assigned_by_name
       FROM evaluations e
       INNER JOIN evaluation_templates et ON et.id = e.template_id AND et.status = 'active'
+      LEFT JOIN users assigner ON assigner.id = e.assigned_by
       WHERE e.user_id = ${userId}
       ORDER BY e.due_date ASC, e.created_at DESC
     `;
@@ -249,6 +252,7 @@ export const evaluationsDb = {
       google_form_id: row.google_form_id,
       responses: row.responses,
       online: row.online,
+      assignedByName: row.assigned_by_name,
     }));
   },
 

@@ -34,7 +34,7 @@ interface UserEvaluation {
   title: string;
   description?: string;
   status?: EvaluationStatus | null;
-  assigned_date?: string;
+  assignedDate?: string;
   dueDate?: string;
   started_at?: string | null;
   submitted_at?: string | null;
@@ -42,7 +42,7 @@ interface UserEvaluation {
   maxScore?: number | null;
   passingScorePct?: number;
   details?: EvaluationDetails | string | null;
-  assigned_by_name?: string | null;
+  assignedByName?: string | null;
   google_form_id?: string | null;
   type: string;
   online: boolean;
@@ -312,7 +312,12 @@ function EvalDrawer({
             </div>
             <div>
               <p className="font-medium text-gray-500 mb-0.5">Asignada</p>
-              <p className="text-gray-700">{formatDateShort(evaluation.assigned_date!)}</p>
+              <p className="text-gray-700">
+                {formatDateShort(evaluation.assignedDate)}
+                {evaluation.assignedByName && (
+                  <span className="text-gray-400"> por {evaluation.assignedByName}</span>
+                )}
+              </p>
             </div>
           </div>
 
