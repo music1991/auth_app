@@ -15,6 +15,7 @@ import {
 
 import { startEvaluation } from "@/services/form";
 import { formatDateShort, isEvaluationExpired } from "@/lib/utils";
+import { isEvaluationApproved } from "@/lib/formulas";
 import { EVALUATION_TYPE_LABELS } from "@/lib/constants";
 import { EvaluationType } from "@/types";
 import EvaluationFormModal from "../EvaluationFormModal";
@@ -38,7 +39,8 @@ interface UserEvaluation {
   started_at?: string | null;
   submitted_at?: string | null;
   score: number | null;
-  max_score?: number | null;
+  maxScore?: number | null;
+  passingScorePct?: number;
   details?: EvaluationDetails | string | null;
   assigned_by_name?: string | null;
   google_form_id?: string | null;
@@ -59,9 +61,15 @@ function parseDetails(details: UserEvaluation["details"]): EvaluationDetails {
 }
 
 function getEvaluationScore(ev: UserEvaluation) {
-  if (ev.score != null && ev.max_score != null) return `${ev.score}/${ev.max_score}`;
+  if (ev.score != null && ev.maxScore != null) return `${ev.score}/${ev.maxScore}`;
   if (ev.score != null) return `${ev.score}`;
   return null;
+}
+
+function getApprovalLabel(ev: UserEvaluation): { text: string; approved: boolean } | null {
+  if (ev.status !== "completed" || ev.score == null || ev.maxScore == null) return null;
+  const approved = isEvaluationApproved(ev.score, ev.maxScore, ev.passingScorePct);
+  return { text: approved ? "Aprobada" : "No aprobada", approved };
 }
 
 const COLUMN_CONFIG: Record<EvaluationStatus, {
@@ -118,6 +126,7 @@ function EvalCard({
   const status: EvaluationStatus = isExpired ? "expired" : rawStatus;
   const config = COLUMN_CONFIG[status];
   const score = getEvaluationScore(evaluation);
+  const approval = getApprovalLabel(evaluation);
 
   return (
     <button
@@ -137,6 +146,15 @@ function EvalCard({
           {config.label}
         </span>
         <div className="flex items-center gap-2">
+          {approval && (
+            <span
+              className={`text-[11px] font-semibold ${
+                approval.approved ? "text-emerald-600" : "text-red-600"
+              }`}
+            >
+              {approval.text}
+            </span>
+          )}
           {score && (
             <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
               <BarChart3 size={11} />
@@ -210,6 +228,7 @@ function EvalDrawer({
   const config = COLUMN_CONFIG[status];
   const details = parseDetails(evaluation.details);
   const score = getEvaluationScore(evaluation);
+  const approval = getApprovalLabel(evaluation);
   const canStart = (rawStatus === "pending" || rawStatus === "in_progress") && !isExpired && evaluation.online;
 
   return (
@@ -264,6 +283,18 @@ function EvalDrawer({
               <p className="text-xs font-semibold text-gray-700">{score ?? "—"}</p>
             </div>
           </div>
+
+          {approval && (
+            <div
+              className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+                approval.approved
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-red-200 bg-red-50 text-red-700"
+              }`}
+            >
+              {approval.text}
+            </div>
+          )}
 
           {details.instructions && (
             <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">

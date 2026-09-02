@@ -165,6 +165,7 @@ export interface EvaluationResultRow {
   completedDate: string | null;
   score: number | null;
   maxScore: number | null;
+  passingScorePct: number;
   responses: Record<string, string | string[]> | null;
 }
 
@@ -183,6 +184,7 @@ export interface NewEvaluationFormData {
   google_form_id: string;
   online: boolean;
   max_score: number;
+  passing_score_pct: number;
 }
 
 export interface AssignmentUser extends AdminUser {

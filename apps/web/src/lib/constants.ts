@@ -30,4 +30,5 @@ export const INITIAL_EVALUATION_FORM: NewEvaluationFormData = {
   google_form_id: "",
   online: true,
   max_score: 0,
+  passing_score_pct: 60,
 };

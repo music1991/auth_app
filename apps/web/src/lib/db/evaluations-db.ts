@@ -64,15 +64,17 @@ export const evaluationsDb = {
     googleFormId?: string;
     online: boolean;
     maxScore: number;
+    passingScorePct?: number;
   }) {
     const rows = await sql<{ id: string }>`
       INSERT INTO evaluation_templates (
-        title, description, type, status, created_by, due_date, google_form_id, online, max_score
+        title, description, type, status, created_by, due_date, google_form_id, online, max_score, passing_score_pct
       )
       VALUES (
         ${template.title}, ${template.description}, ${template.type},
         'draft', ${template.createdBy}, ${template.dueDate ?? null},
-        ${template.googleFormId ?? null}, ${template.online}, ${template.maxScore}
+        ${template.googleFormId ?? null}, ${template.online}, ${template.maxScore},
+        ${template.passingScorePct ?? 60}
       )
       RETURNING id
     `;
@@ -157,11 +159,13 @@ export const evaluationsDb = {
       completed_date: string | null;
       score: number | null;
       max_score: number | null;
+      passing_score_pct: number;
       responses: Record<string, string | string[]> | null;
     }>`
       SELECT e.id, u.id as user_id, u.name, u.email,
              e.status, e.due_date, e.completed_date, e.score,
              COALESCE(NULLIF(e.max_score, 0), et.max_score) as max_score,
+             et.passing_score_pct,
              e.responses
       FROM evaluations e
       JOIN users u ON u.id = e.user_id
@@ -179,6 +183,7 @@ export const evaluationsDb = {
       completedDate: row.completed_date,
       score: row.score,
       maxScore: row.max_score,
+      passingScorePct: row.passing_score_pct,
       responses: row.responses,
     }));
   },
@@ -208,6 +213,7 @@ export const evaluationsDb = {
       completed_date: string | null;
       score: number | null;
       max_score: number | null;
+      passing_score_pct: number;
       responses: unknown;
       title: string;
       description: string;
@@ -220,7 +226,7 @@ export const evaluationsDb = {
         e.status, e.assigned_date, e.due_date, e.completed_date,
         e.score, e.max_score, e.responses,
         et.title, et.description, et.type,
-        et.google_form_id as google_form_id, et.online
+        et.google_form_id as google_form_id, et.online, et.passing_score_pct
       FROM evaluations e
       INNER JOIN evaluation_templates et ON et.id = e.template_id AND et.status = 'active'
       WHERE e.user_id = ${userId}
@@ -239,6 +245,7 @@ export const evaluationsDb = {
       completedDate: row.completed_date,
       score: row.score ?? 0,
       maxScore: row.max_score ?? 0,
+      passingScorePct: row.passing_score_pct,
       google_form_id: row.google_form_id,
       responses: row.responses,
       online: row.online,

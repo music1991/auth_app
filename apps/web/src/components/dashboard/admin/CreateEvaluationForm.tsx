@@ -70,12 +70,25 @@ export function CreateEvaluationForm({
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-bold text-gray-400 uppercase">Maximo Puntaje</label>
-          <input            
+          <input
             type="number"
             placeholder="Puntaje máximo"
             className="border p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
             value={newEvaluation.max_score}
             onChange={(e) => onChange({ max_score: Number(e.target.value) })}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-bold text-gray-400 uppercase">Nota de Aprobación (%)</label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            placeholder="Ej: 60"
+            className="border p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+            value={newEvaluation.passing_score_pct}
+            onChange={(e) => onChange({ passing_score_pct: Number(e.target.value) })}
           />
         </div>
 

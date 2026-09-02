@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
       createdBy: session.userId,
       online: data.online,
       maxScore: data.max_score,
+      passingScorePct: data.passing_score_pct,
     });
 
     return NextResponse.json({ success: true, templateId }, { status: 201 });

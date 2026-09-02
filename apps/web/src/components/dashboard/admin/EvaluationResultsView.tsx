@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { formatDateShort, isEvaluationExpired } from "@/lib/utils";
+import { isEvaluationApproved } from "@/lib/formulas";
 import { StatItem } from "../StatItem";
 import {
   EvaluationAssignmentStatus,
@@ -58,6 +59,24 @@ function getResultStatus(row: EvaluationResultRow): ResultStatus {
 function formatScore(row: EvaluationResultRow): string {
   if (row.score != null && row.maxScore != null) return `${row.score}/${row.maxScore}`;
   return "—";
+}
+
+function ApprovalBadge({ row }: { row: EvaluationResultRow }) {
+  if (row.status !== "completed" || row.score == null || row.maxScore == null) {
+    return <span className="text-gray-300">—</span>;
+  }
+  const approved = isEvaluationApproved(row.score, row.maxScore, row.passingScorePct);
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+        approved
+          ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+          : "bg-red-100 text-red-700 border-red-200"
+      }`}
+    >
+      {approved ? "Aprobado" : "No aprobado"}
+    </span>
+  );
 }
 
 function formatResponseValue(value: string | string[]): string {
@@ -169,6 +188,7 @@ export function EvaluationResultsView({
                   <th className="px-4 py-3">Usuario</th>
                   <th className="px-4 py-3">Estado</th>
                   <th className="px-4 py-3">Nota</th>
+                  <th className="px-4 py-3">Aprobación</th>
                   <th className="px-4 py-3">Fecha límite</th>
                   <th className="px-4 py-3">Completado</th>
                 </tr>
@@ -206,12 +226,15 @@ export function EvaluationResultsView({
                           <ResultStatusBadge status={status} />
                         </td>
                         <td className="px-4 py-3 font-semibold text-gray-700">{formatScore(row)}</td>
+                        <td className="px-4 py-3">
+                          <ApprovalBadge row={row} />
+                        </td>
                         <td className="px-4 py-3 text-gray-500">{formatDateShort(row.dueDate)}</td>
                         <td className="px-4 py-3 text-gray-500">{formatDateShort(row.completedDate)}</td>
                       </tr>
                       {isExpanded && (
                         <tr className="border-b border-gray-50 last:border-b-0 bg-gray-50/60">
-                          <td colSpan={5} className="px-4 py-4">
+                          <td colSpan={6} className="px-4 py-4">
                             {responseEntries.length === 0 ? (
                               <p className="text-xs text-gray-400">Sin respuestas registradas</p>
                             ) : (
